@@ -188,7 +188,10 @@ impl<const RATE: usize> KeccakXofState<RATE> {
 
 //// From here, everything is generic
 
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1000 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1000 in")
+)]
 const RC_INTERLEAVED_0: [u32; 255] = [
     0x00000001, 0x00000000, 0x00000000, 0x00000000, 0x00000001, 0x00000001, 0x00000001, 0x00000001,
     0x00000000, 0x00000000, 0x00000001, 0x00000000, 0x00000001, 0x00000001, 0x00000001, 0x00000001,
@@ -224,7 +227,10 @@ const RC_INTERLEAVED_0: [u32; 255] = [
     0x00000000, 0x00000001, 0x00000001, 0x00000001, 0x00000000, 0x00000000, 0x00000000,
 ];
 
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1000 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1000 in")
+)]
 const RC_INTERLEAVED_1: [u32; 255] = [
     0x00000000, 0x00000089, 0x8000008b, 0x80008080, 0x0000008b, 0x00008000, 0x80008088, 0x80000082,
     0x0000000b, 0x0000000a, 0x00008082, 0x00008003, 0x0000808b, 0x8000000b, 0x8000008a, 0x80000081,
@@ -417,7 +423,10 @@ pub(crate) fn keccakf1600_round0_theta(s: &mut KeccakState) {
 }
 
 #[inline(always)]
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1000 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1000 in")
+)]
 pub(crate) fn keccakf1600_round0_pi_rho_chi_1<const BASE_ROUND: usize>(s: &mut KeccakState) {
     #[cfg(not(feature = "full-unroll"))]
     let i = s.i;
@@ -575,7 +584,10 @@ pub(crate) fn keccakf1600_round0_pi_rho_chi_1<const BASE_ROUND: usize>(s: &mut K
 }
 
 #[inline(always)]
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1500 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1500 in")
+)]
 pub(crate) fn keccakf1600_round0_pi_rho_chi_2(s: &mut KeccakState) {
     {
         let (bx4, bx0) = {
@@ -921,7 +933,10 @@ pub(crate) fn keccakf1600_round1_theta(s: &mut KeccakState) {
 }
 
 #[inline(always)]
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1000 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1000 in")
+)]
 pub(crate) fn keccakf1600_round1_pi_rho_chi_1<const BASE_ROUND: usize>(s: &mut KeccakState) {
     #[cfg(not(feature = "full-unroll"))]
     let i = s.i;
@@ -1079,7 +1094,10 @@ pub(crate) fn keccakf1600_round1_pi_rho_chi_1<const BASE_ROUND: usize>(s: &mut K
 }
 
 #[inline(always)]
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1500 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1500 in")
+)]
 pub(crate) fn keccakf1600_round1_pi_rho_chi_2(s: &mut KeccakState) {
     {
         let (bx4, bx0) = {
@@ -1425,7 +1443,10 @@ pub(crate) fn keccakf1600_round2_theta(s: &mut KeccakState) {
 }
 
 #[inline(always)]
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1000 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1000 in")
+)]
 pub(crate) fn keccakf1600_round2_pi_rho_chi_1<const BASE_ROUND: usize>(s: &mut KeccakState) {
     #[cfg(not(feature = "full-unroll"))]
     let i = s.i;
@@ -1583,7 +1604,10 @@ pub(crate) fn keccakf1600_round2_pi_rho_chi_1<const BASE_ROUND: usize>(s: &mut K
 }
 
 #[inline(always)]
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1500 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1500 in")
+)]
 pub(crate) fn keccakf1600_round2_pi_rho_chi_2(s: &mut KeccakState) {
     {
         let (bx4, bx0) = {
@@ -1780,7 +1804,10 @@ pub(crate) fn keccakf1600_round2_pi_rho_chi_2(s: &mut KeccakState) {
 }
 
 #[inline(always)]
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1000 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1000 in")
+)]
 pub(crate) fn keccakf1600_round3_theta_c_x0_z0(s: &mut KeccakState) {
     let ax_0 = s.get_with_zeta(0, 0, 0);
     let ax_3 = s.get_with_zeta(3, 0, 0);
@@ -1930,7 +1957,10 @@ pub(crate) fn keccakf1600_round3_theta(s: &mut KeccakState) {
 }
 
 #[inline(always)]
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1000 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1000 in")
+)]
 pub(crate) fn keccakf1600_round3_pi_rho_chi_1<const BASE_ROUND: usize>(s: &mut KeccakState) {
     #[cfg(not(feature = "full-unroll"))]
     let i = s.i;
@@ -2088,7 +2118,10 @@ pub(crate) fn keccakf1600_round3_pi_rho_chi_1<const BASE_ROUND: usize>(s: &mut K
 }
 
 #[inline(always)]
-#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1500 in"))]
+#[cfg_attr(
+    hax_backend_lean,
+    hax_lib::lean::before("set_option maxRecDepth 1500 in")
+)]
 pub(crate) fn keccakf1600_round3_pi_rho_chi_2(s: &mut KeccakState) {
     {
         let (bx4, bx0) = {
