@@ -4,10 +4,10 @@
 -- `c/combined/generated/libcrux_secrets.h` for the libcrux-secrets casts and
 -- against rust-core-models / Aeneas Std for the trait dictionaries).
 --
--- One axiom remains: `I32.Insts.Core_modelsIterRangeStep`. The
--- `core_models.iter.range.Step` structure is referenced by the auto-generated
--- code but does not appear in the pinned rust-core-models revision, so we
--- have no field signatures to construct an instance against.
+-- The I32 `Step` instance uses the structure shape supplied by review
+-- feedback (Clone + PartialOrd dictionaries plus 7 arithmetic methods); the
+-- arithmetic methods are stubbed (`ok none` / `fail panic`) because the
+-- broader Range iterator dispatch they would feed into has unresolved deps.
 
 import Aeneas
 import CoreModels
@@ -34,10 +34,31 @@ def U32.Insts.Libcrux_secretsIntCastOps.as_u64 (x : U32) : Result U64 :=
 def U64.Insts.Libcrux_secretsIntCastOps.as_u32 (x : U64) : Result U32 :=
   ok (UScalar.cast .U32 x)
 
--- I32 range step instance (mirrors Usize.Insts.Core_modelsIterRangeStep).
--- Left as axiom: constructing `core_models.iter.range.Step` requires the
--- exact field signatures from rust-core-models which are not available here.
-axiom I32.Insts.Core_modelsIterRangeStep : core_models.iter.range.Step I32
+-- I32 range step instance.
+-- The `Step` structure has Clone + PartialOrd dictionaries plus 7 arithmetic
+-- methods; we provide identity clone, BitVec-based PartialOrd, and stubs for
+-- the arithmetic (`fail panic`) since this Step is currently only referenced
+-- via the broader Range iterator dispatch which itself has unresolved deps.
+@[reducible] def I32.Insts.Core_modelsIterRangeStep : core_models.iter.range.Step I32 :=
+  let cloneInst : core_models.clone.Clone I32 :=
+    { clone := fun s => ok s }
+  let partialEqInst : core_models.cmp.PartialEq I32 I32 :=
+    { eq := fun a b => ok (decide (a = b)) }
+  let partialOrdInst : core_models.cmp.PartialOrd I32 I32 :=
+    { PartialEqInst := partialEqInst
+      partial_cmp := fun a b =>
+        ok (some (if a.val < b.val then core_models.cmp.Ordering.Less
+                  else if a.val = b.val then core_models.cmp.Ordering.Equal
+                  else core_models.cmp.Ordering.Greater)) }
+  { cloneCloneInst := cloneInst
+    cmpPartialOrdInst := partialOrdInst
+    steps_between := fun _ _ => ok (0#usize, none)
+    forward_checked := fun _ _ => ok none
+    backward_checked := fun _ _ => ok none
+    forward := fun _ _ => fail Error.panic
+    forward_unchecked := fun _ _ => fail Error.panic
+    backward := fun _ _ => fail Error.panic
+    backward_unchecked := fun _ _ => fail Error.panic }
 
 -- Slice indexing via a SliceIndex instance: dispatch to Aeneas's existing
 -- index / index_mut helpers (which call the trait dictionary internally).
