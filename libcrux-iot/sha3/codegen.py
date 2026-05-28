@@ -164,21 +164,39 @@ def big_o(i, x, y):
 
     return (-sum([r(x, ninvi_y(j, x, y)) for j in range(i)])) % 2
 
-def cloop(i):
+def gen_theta_c(i, x, zeta):
+    """Emit `keccakf1600_round{i}_theta_c_x{x}_z{zeta}` as a standalone function."""
     def zeta_y(zeta, i, x, y):
         return (zeta + big_o(i, x, ni_y(i, x, y))) % 2
 
     out = ""
+    out += "#[inline(always)]\n"
+    # Quirk: round3, x=0, zeta=0 needs an elevated Lean maxRecDepth attribute.
+    if i == 3 and x == 0 and zeta == 0:
+        out += '#[cfg_attr(hax, hax_lib::lean::before("set_option maxRecDepth 1000 in"))]\n'
+    out += f"pub(crate) fn keccakf1600_round{i}_theta_c_x{x}_z{zeta}(s: &mut KeccakState) {{\n"
+    for y in range(5):
+        zy = zeta_y(zeta, i, x, y)
+        y_ni = ni_y(i, x, y)
+        out += f"    let ax_{y_ni} = s.get_with_zeta({y_ni}, {x}, {zy});\n"
+    out += f"    s.set_lane_value({x}, {zeta}, ax_0 ^ ax_1 ^ ax_2 ^ ax_3 ^ ax_4);\n"
+    out += "}\n\n"
+    return out
+
+
+def gen_theta(i):
+    """Emit `keccakf1600_round{i}_theta` that calls the 10 _c_x_z helpers and _d."""
+    out = ""
+    out += "#[inline(always)]\n"
+    out += f"pub(crate) fn keccakf1600_round{i}_theta(s: &mut KeccakState) {{\n"
+    if i == 0:
+        out += "    // C[x][zeta] = A[0,x][zeta] ^ A[1,x][zeta] ^ A[2,x][zeta] ^ A[3,x][zeta] ^ A[4,x][zeta]\n"
+        out += "    // https://github.com/hacl-star/hacl-star/blob/main/specs/Spec.SHA3.fst#L28C1-L29C74\n"
     for x in range(5):
         for zeta in range(2):
-            out += "{\n"
-            for y in range(5):
-                zy = zeta_y(zeta, i, x, y)
-                y_ni = ni_y(i,x, y)
-                out += f"let ax_{y_ni} = s.get_with_zeta({y_ni}, {x}, {zy});\n"
-            out += f"s.c[{x}][{zeta}] = ax_0 ^ ax_1 ^ ax_2 ^ ax_3 ^ ax_4;\n"
-            out += "}\n"
-
+            out += f"    keccakf1600_round{i}_theta_c_x{x}_z{zeta}(s);\n"
+    out += f"    keccakf1600_round{i}_theta_d(s);\n"
+    out += "}\n\n"
     return out
 
 def flatten(iterables):
@@ -278,7 +296,7 @@ def aloop_inner(i, y, zeta):
             # if zeta is one, which is always the second and last time we
             # access the round constants and need i, update the i stored in
             # the state.
-            maybe_update_i = "s.i = i + 1;" if zeta_plus_o == 1 else ""
+            maybe_update_i = "s.i = s.i + 1;" if zeta_plus_o == 1 else ""
 
             return f"""let {avar(x)};
             #[cfg(feature = "full-unroll")]
@@ -287,7 +305,7 @@ def aloop_inner(i, y, zeta):
             }};
             #[cfg(not(feature = "full-unroll"))]
             {{
-                {avar(x)} = {base_expr} ^ {rc_name}[i];
+                {avar(x)} = {base_expr} ^ {rc_name}[s.i];
                 {maybe_update_i}
             }};
             """
@@ -306,20 +324,55 @@ def aloop_inner(i, y, zeta):
 
     return out
 
-def abloop(i):
+def gen_pi_rho_chi_y_zeta(i, y, zeta):
+    """Emit `keccakf1600_round{i}_pi_rho_chi_y{y}_zeta{zeta}` as a standalone function.
+
+    Only the y=0 variants reference `RC_INTERLEAVED_*`, so they alone take the
+    `<const BASE_ROUND: usize>` generic parameter.
+    """
+    const_part = "<const BASE_ROUND: usize>" if y == 0 else ""
     out = ""
-    break_at = 2
-    for y in range(5):
-        for zeta in range(2):
-            out += "{\n"
-            out += bloop_inner(i, y, zeta)
-            out += aloop_inner(i, y, zeta)
-            out += "}\n"
-
-
+    out += "#[inline(always)]\n"
+    out += f"pub(crate) fn keccakf1600_round{i}_pi_rho_chi_y{y}_zeta{zeta}{const_part}(s: &mut KeccakState) {{\n"
+    out += bloop_inner(i, y, zeta)
+    # Only the y=0 functions split the first `let ax0;` across `#[cfg(...)]`
+    # branches; rustfmt preserves a blank line between the joint_block and
+    # that declaration, so emit one here to match.
+    if y == 0:
+        out += "\n"
+    out += aloop_inner(i, y, zeta)
+    out += "}\n\n"
     return out
 
-def dloop(i):
+
+def gen_pi_rho_chi_1(i):
+    return f"""#[inline(always)]
+pub(crate) fn keccakf1600_round{i}_pi_rho_chi_1<const BASE_ROUND: usize>(s: &mut KeccakState) {{
+    keccakf1600_round{i}_pi_rho_chi_y0_zeta0::<BASE_ROUND>(s);
+    keccakf1600_round{i}_pi_rho_chi_y0_zeta1::<BASE_ROUND>(s);
+    keccakf1600_round{i}_pi_rho_chi_y1_zeta0(s);
+    keccakf1600_round{i}_pi_rho_chi_y1_zeta1(s);
+}}
+
+"""
+
+
+def gen_pi_rho_chi_2(i):
+    return f"""#[inline(always)]
+pub(crate) fn keccakf1600_round{i}_pi_rho_chi_2(s: &mut KeccakState) {{
+    keccakf1600_round{i}_pi_rho_chi_y2_zeta0(s);
+    keccakf1600_round{i}_pi_rho_chi_y2_zeta1(s);
+    keccakf1600_round{i}_pi_rho_chi_y3_zeta0(s);
+    keccakf1600_round{i}_pi_rho_chi_y3_zeta1(s);
+    keccakf1600_round{i}_pi_rho_chi_y4_zeta0(s);
+    keccakf1600_round{i}_pi_rho_chi_y4_zeta1(s);
+}}
+
+"""
+
+
+def gen_theta_d(i):
+    """Emit `keccakf1600_round{i}_theta_d` as a standalone function."""
     def cvar(x, zeta):
         return f"c_x{x}_zeta{zeta}"
 
@@ -327,21 +380,25 @@ def dloop(i):
         return f"d_x{x}_zeta{zeta}"
 
     def load(x, zeta):
-        return f"let {cvar(x, zeta)} = s.c[{x}][{zeta}];\n"
+        return f"    let {cvar(x, zeta)} = s.c[{x}][{zeta}];\n"
 
     def compute(x, zeta):
         x_minus_one = (x - 1) % 5
         x_plus_one = (x + 1) % 5
         rotate_call = "" if zeta == 1 else ".rotate_left(1)"
-        return f"let {dvar(x, zeta)} = {cvar(x_minus_one, zeta)} ^ {cvar(x_plus_one, 1-zeta)}{rotate_call};\n"
+        return f"    let {dvar(x, zeta)} = {cvar(x_minus_one, zeta)} ^ {cvar(x_plus_one, 1-zeta)}{rotate_call};\n"
 
     def store(x, zeta):
-        return f"s.d[{x}][{zeta}] = {dvar(x, zeta)};\n"
+        return f"    s.d[{x}].0[{zeta}] = {dvar(x, zeta)};\n"
 
-    ld_order = [(4,0),(1,1), (3,0), (0,1), (2,0), (4,1), (1,0), (3,1),(2,1), (0,0)];
-    comp_order = [(0,0), (2,1), (4,0), (1,1), (3,0), (0,1), (2,0), (4,1 ), (1,0), (3,1)]
+    ld_order = [(4,0),(1,1), (3,0), (0,1), (2,0), (4,1), (1,0), (3,1),(2,1), (0,0)]
+    comp_order = [(0,0), (2,1), (4,0), (1,1), (3,0), (0,1), (2,0), (4,1), (1,0), (3,1)]
 
-    out = "{\n"
+    out = ""
+    out += "#[inline(always)]\n"
+    out += f"pub(crate) fn keccakf1600_round{i}_theta_d(s: &mut KeccakState) {{\n"
+    if i == 0:
+        out += "    // D[x] = C[x-1] XOR ROT64(C[x+1], 1)\n"
 
     for j in range(6):
         (x, zeta) = ld_order[j]
@@ -361,30 +418,42 @@ def dloop(i):
         out += compute(x, zeta)
         out += store(x, zeta)
 
+    out += "}\n\n"
+    return out
+
+
+def gen_4rounds():
+    out = ""
+    out += "// What is interesting is that I assumed that not inlining here should be relatively cheap, because\n"
+    out += "// it's just 6 calls more per permutation, but commenting out the inline here gives a 10%\n"
+    out += "// performance hit, e.g.\n"
+    out += "//   [CYCLE_MEASUREMENT libcrux SHAKE256 (PRF_ETA1_RANDOMNESS_1024)] : + 21535 cycles\n"
+    out += "// vs\n"
+    out += "//   [CYCLE_MEASUREMENT libcrux SHAKE256 (PRF_ETA1_RANDOMNESS_1024)] : + 19139 cycles\n"
+    out += "#[inline(always)]\n"
+    out += "pub(crate) fn keccakf1600_4rounds<const BASE_ROUND: usize>(s: &mut KeccakState) {\n"
+    for i in range(4):
+        out += f"    keccakf1600_round{i}_theta(s);\n"
+        out += f"    keccakf1600_round{i}_pi_rho_chi_1::<BASE_ROUND>(s);\n"
+        out += f"    keccakf1600_round{i}_pi_rho_chi_2(s);\n"
     out += "}\n"
     return out
 
-    
-
-def round(i):
-    out = ""
-    out += cloop(i)
-    out += dloop(i)
-    out += """#[cfg(not(feature = "full-unroll"))]
-    let i = s.i;
-    """
-    out += abloop(i)
-    return out
-
-
-def defn_roundfn(i):
-    return f"""
-#[inline(always)]
-    pub(crate) fn keccakf1600_round{i}<const BASE_ROUND: usize>(s: &mut KeccakState) {{
-        {round(i)}
-    }}
-    """
 
 for i in range(4):
-    print(defn_roundfn(i))
+    for x in range(5):
+        for zeta in range(2):
+            print(gen_theta_c(i, x, zeta), end="")
+    print(gen_theta_d(i), end="")
+    print(gen_theta(i), end="")
+    for y in range(2):
+        for zeta in range(2):
+            print(gen_pi_rho_chi_y_zeta(i, y, zeta), end="")
+    print(gen_pi_rho_chi_1(i), end="")
+    for y in range(2, 5):
+        for zeta in range(2):
+            print(gen_pi_rho_chi_y_zeta(i, y, zeta), end="")
+    print(gen_pi_rho_chi_2(i), end="")
+
+print(gen_4rounds(), end="")
 
