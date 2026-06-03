@@ -455,200 +455,225 @@ private theorem lift_perm_getElem_bv_0_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(0 : Nat)]!).bv =
       lift_lane_bv ((s.st.val[0]!).val[0]!.bv) ((s.st.val[0]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨0, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨0, by decide⟩).val = 0 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨0, by decide⟩) = false := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨0, by decide⟩)).val = 0 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨0, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_1_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(1 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[3]!).val[0]!.bv) ((s.st.val[3]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[7]!).val[1]!.bv) ((s.st.val[7]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨1, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨1, by decide⟩).val = 3 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨1, by decide⟩) = false := by rw [impl_swap_k_three]; decide
-  rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨1, by decide⟩)).val = 7 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨1, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
+  rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_2_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(2 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[1]!).val[1]!.bv) ((s.st.val[1]!).val[0]!.bv) := by
+      lift_lane_bv ((s.st.val[14]!).val[0]!.bv) ((s.st.val[14]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨2, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨2, by decide⟩).val = 1 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨2, by decide⟩) = true := by rw [impl_swap_k_three]; decide
-  rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨2, by decide⟩)).val = 14 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨2, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
+  rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_3_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(3 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[4]!).val[1]!.bv) ((s.st.val[4]!).val[0]!.bv) := by
+      lift_lane_bv ((s.st.val[16]!).val[0]!.bv) ((s.st.val[16]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨3, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨3, by decide⟩).val = 4 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨3, by decide⟩) = true := by rw [impl_swap_k_three]; decide
-  rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨3, by decide⟩)).val = 16 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨3, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
+  rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_4_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(4 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[2]!).val[0]!.bv) ((s.st.val[2]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[23]!).val[1]!.bv) ((s.st.val[23]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨4, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨4, by decide⟩).val = 2 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨4, by decide⟩) = false := by rw [impl_swap_k_three]; decide
-  rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨4, by decide⟩)).val = 23 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨4, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
+  rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_5_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(5 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[7]!).val[1]!.bv) ((s.st.val[7]!).val[0]!.bv) := by
+      lift_lane_bv ((s.st.val[3]!).val[0]!.bv) ((s.st.val[3]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨5, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨5, by decide⟩).val = 7 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨5, by decide⟩) = true := by rw [impl_swap_k_three]; decide
-  rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨5, by decide⟩)).val = 3 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨5, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
+  rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_6_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(6 : Nat)]!).bv =
       lift_lane_bv ((s.st.val[5]!).val[0]!.bv) ((s.st.val[5]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨6, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨6, by decide⟩).val = 5 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨6, by decide⟩) = false := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨6, by decide⟩)).val = 5 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨6, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_7_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(7 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[8]!).val[0]!.bv) ((s.st.val[8]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[12]!).val[0]!.bv) ((s.st.val[12]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨7, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨7, by decide⟩).val = 8 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨7, by decide⟩) = false := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨7, by decide⟩)).val = 12 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨7, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_8_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(8 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[6]!).val[1]!.bv) ((s.st.val[6]!).val[0]!.bv) := by
+      lift_lane_bv ((s.st.val[19]!).val[1]!.bv) ((s.st.val[19]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨8, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨8, by decide⟩).val = 6 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨8, by decide⟩) = true := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨8, by decide⟩)).val = 19 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨8, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_9_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(9 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[9]!).val[0]!.bv) ((s.st.val[9]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[21]!).val[0]!.bv) ((s.st.val[21]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨9, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨9, by decide⟩).val = 9 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨9, by decide⟩) = false := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨9, by decide⟩)).val = 21 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨9, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_10_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(10 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[14]!).val[0]!.bv) ((s.st.val[14]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[1]!).val[1]!.bv) ((s.st.val[1]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨10, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨10, by decide⟩).val = 14 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨10, by decide⟩) = false := by rw [impl_swap_k_three]; decide
-  rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨10, by decide⟩)).val = 1 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨10, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
+  rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_11_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(11 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[12]!).val[0]!.bv) ((s.st.val[12]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[8]!).val[0]!.bv) ((s.st.val[8]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨11, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨11, by decide⟩).val = 12 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨11, by decide⟩) = false := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨11, by decide⟩)).val = 8 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨11, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_12_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(12 : Nat)]!).bv =
       lift_lane_bv ((s.st.val[10]!).val[1]!.bv) ((s.st.val[10]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨12, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨12, by decide⟩).val = 10 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨12, by decide⟩) = true := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨12, by decide⟩)).val = 10 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨12, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_13_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(13 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[13]!).val[1]!.bv) ((s.st.val[13]!).val[0]!.bv) := by
+      lift_lane_bv ((s.st.val[17]!).val[1]!.bv) ((s.st.val[17]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨13, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨13, by decide⟩).val = 13 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨13, by decide⟩) = true := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨13, by decide⟩)).val = 17 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨13, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_14_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(14 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[11]!).val[1]!.bv) ((s.st.val[11]!).val[0]!.bv) := by
+      lift_lane_bv ((s.st.val[24]!).val[1]!.bv) ((s.st.val[24]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨14, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨14, by decide⟩).val = 11 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨14, by decide⟩) = true := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨14, by decide⟩)).val = 24 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨14, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_15_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(15 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[16]!).val[0]!.bv) ((s.st.val[16]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[4]!).val[1]!.bv) ((s.st.val[4]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨15, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨15, by decide⟩).val = 16 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨15, by decide⟩) = false := by rw [impl_swap_k_three]; decide
-  rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨15, by decide⟩)).val = 4 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨15, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
+  rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_16_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(16 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[19]!).val[1]!.bv) ((s.st.val[19]!).val[0]!.bv) := by
+      lift_lane_bv ((s.st.val[6]!).val[1]!.bv) ((s.st.val[6]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨16, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨16, by decide⟩).val = 19 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨16, by decide⟩) = true := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨16, by decide⟩)).val = 6 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨16, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_17_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(17 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[17]!).val[1]!.bv) ((s.st.val[17]!).val[0]!.bv) := by
+      lift_lane_bv ((s.st.val[13]!).val[1]!.bv) ((s.st.val[13]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨17, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨17, by decide⟩).val = 17 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨17, by decide⟩) = true := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨17, by decide⟩)).val = 13 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨17, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_18_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(18 : Nat)]!).bv =
       lift_lane_bv ((s.st.val[15]!).val[1]!.bv) ((s.st.val[15]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨18, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨18, by decide⟩).val = 15 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨18, by decide⟩) = true := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨18, by decide⟩)).val = 15 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨18, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_19_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(19 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[18]!).val[0]!.bv) ((s.st.val[18]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[22]!).val[0]!.bv) ((s.st.val[22]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨19, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨19, by decide⟩).val = 18 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨19, by decide⟩) = false := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨19, by decide⟩)).val = 22 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨19, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_20_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(20 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[23]!).val[1]!.bv) ((s.st.val[23]!).val[0]!.bv) := by
+      lift_lane_bv ((s.st.val[2]!).val[0]!.bv) ((s.st.val[2]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨20, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨20, by decide⟩).val = 23 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨20, by decide⟩) = true := by rw [impl_swap_k_three]; decide
-  rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨20, by decide⟩)).val = 2 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨20, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
+  rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_21_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(21 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[21]!).val[0]!.bv) ((s.st.val[21]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[9]!).val[0]!.bv) ((s.st.val[9]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨21, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨21, by decide⟩).val = 21 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨21, by decide⟩) = false := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨21, by decide⟩)).val = 9 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨21, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_22_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(22 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[24]!).val[1]!.bv) ((s.st.val[24]!).val[0]!.bv) := by
+      lift_lane_bv ((s.st.val[11]!).val[1]!.bv) ((s.st.val[11]!).val[0]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨22, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨22, by decide⟩).val = 24 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨22, by decide⟩) = true := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨22, by decide⟩)).val = 11 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨22, by decide⟩)) = true := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_true_bv]
 
 private theorem lift_perm_getElem_bv_23_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(23 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[22]!).val[0]!.bv) ((s.st.val[22]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[18]!).val[0]!.bv) ((s.st.val[18]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨23, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨23, by decide⟩).val = 22 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨23, by decide⟩) = false := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨23, by decide⟩)).val = 18 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨23, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 private theorem lift_perm_getElem_bv_24_3 (s : state.KeccakState) :
     ((↑(lift_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) : List Std.U64)[(24 : Nat)]!).bv =
       lift_lane_bv ((s.st.val[20]!).val[0]!.bv) ((s.st.val[20]!).val[1]!.bv) := by
   have h := lift_perm_getElem_bv_aux s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨24, by decide⟩
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨24, by decide⟩).val = 20 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨24, by decide⟩) = false := by rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨24, by decide⟩)).val = 20 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨24, by decide⟩)) = false := by
+    rw [impl_swap_k_three]; decide
   rw [h, hp, hsw, lift_lane_maybe_swap_false_bv]
 
 set_option maxHeartbeats 2000000 in

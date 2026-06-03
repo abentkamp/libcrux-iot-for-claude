@@ -503,31 +503,16 @@ abbrev rot64 (x : Std.U64) (n : Nat) : Std.U64 := ⟨x.bv.rotateLeft n⟩
 def rho_applied (state : Std.Array Std.U64 25#usize) :
     Std.Array Std.U64 25#usize :=
   Std.Array.make 25#usize [
-    rot64 (state.val[0]!) 0,
-    rot64 (state.val[1]!) 36,
-    rot64 (state.val[2]!) 3,
-    rot64 (state.val[3]!) 41,
-    rot64 (state.val[4]!) 18,
-    rot64 (state.val[5]!) 1,
-    rot64 (state.val[6]!) 44,
-    rot64 (state.val[7]!) 10,
-    rot64 (state.val[8]!) 45,
-    rot64 (state.val[9]!) 2,
-    rot64 (state.val[10]!) 62,
-    rot64 (state.val[11]!) 6,
-    rot64 (state.val[12]!) 43,
-    rot64 (state.val[13]!) 15,
-    rot64 (state.val[14]!) 61,
-    rot64 (state.val[15]!) 28,
-    rot64 (state.val[16]!) 55,
-    rot64 (state.val[17]!) 25,
-    rot64 (state.val[18]!) 21,
-    rot64 (state.val[19]!) 56,
-    rot64 (state.val[20]!) 27,
-    rot64 (state.val[21]!) 20,
-    rot64 (state.val[22]!) 39,
-    rot64 (state.val[23]!) 8,
-    rot64 (state.val[24]!) 14]
+    rot64 (state.val[0]!)  0,  rot64 (state.val[1]!)  1,  rot64 (state.val[2]!)  62,
+    rot64 (state.val[3]!)  28, rot64 (state.val[4]!)  27,
+    rot64 (state.val[5]!)  36, rot64 (state.val[6]!)  44, rot64 (state.val[7]!)  6,
+    rot64 (state.val[8]!)  55, rot64 (state.val[9]!)  20,
+    rot64 (state.val[10]!) 3,  rot64 (state.val[11]!) 10, rot64 (state.val[12]!) 43,
+    rot64 (state.val[13]!) 25, rot64 (state.val[14]!) 39,
+    rot64 (state.val[15]!) 41, rot64 (state.val[16]!) 45, rot64 (state.val[17]!) 15,
+    rot64 (state.val[18]!) 21, rot64 (state.val[19]!) 8,
+    rot64 (state.val[20]!) 18, rot64 (state.val[21]!) 2,  rot64 (state.val[22]!) 61,
+    rot64 (state.val[23]!) 56, rot64 (state.val[24]!) 14]
 
 @[spec]
 theorem rho_unrolled_spec (state : Std.Array Std.U64 25#usize) :
@@ -599,11 +584,11 @@ theorem rho_unrolled_spec (state : Std.Array Std.U64 25#usize) :
 def pi_applied (state : Std.Array Std.U64 25#usize) :
     Std.Array Std.U64 25#usize :=
   Std.Array.make 25#usize [
-    state.val[0]!, state.val[15]!, state.val[5]!, state.val[20]!, state.val[10]!,
-    state.val[6]!, state.val[21]!, state.val[11]!, state.val[1]!, state.val[16]!,
-    state.val[12]!, state.val[2]!, state.val[17]!, state.val[7]!, state.val[22]!,
-    state.val[18]!, state.val[8]!, state.val[23]!, state.val[13]!, state.val[3]!,
-    state.val[24]!, state.val[14]!, state.val[4]!, state.val[19]!, state.val[9]!]
+    state.val[0]!,  state.val[6]!,  state.val[12]!, state.val[18]!, state.val[24]!,
+    state.val[3]!,  state.val[9]!,  state.val[10]!, state.val[16]!, state.val[22]!,
+    state.val[1]!,  state.val[7]!,  state.val[13]!, state.val[19]!, state.val[20]!,
+    state.val[4]!,  state.val[5]!,  state.val[11]!, state.val[17]!, state.val[23]!,
+    state.val[2]!,  state.val[8]!,  state.val[14]!, state.val[15]!, state.val[21]!]
 
 @[spec]
 theorem pi_unrolled_spec (state : Std.Array Std.U64 25#usize) :
@@ -642,36 +627,37 @@ theorem pi_unrolled_spec (state : Std.Array Std.U64 25#usize) :
     show ((23#usize : Std.Usize).val) = 23 from rfl,
     show ((24#usize : Std.Usize).val) = 24 from rfl]
 
-/-- Pure semantics of `keccak_f.chi_unrolled`: applies Keccak χ row-wise.
-    Each output `out[i] = state[i] ⊕ (¬state[(i+5)%25] ∧ state[(i+10)%25])`. -/
+/-- Pure semantics of `keccak_f.chi_unrolled` (new `5*y + x` layout): for
+    each `i = 5*y + x`, `out[i] = state[i] ⊕ (¬state[5*y + (x+1)%5] ∧
+    state[5*y + (x+2)%5])`. -/
 def chi_applied (state : Std.Array Std.U64 25#usize) :
     Std.Array Std.U64 25#usize :=
   Std.Array.make 25#usize [
-    state.val[0]! ^^^ ((~~~state.val[5]!) &&& state.val[10]!),
-    state.val[1]! ^^^ ((~~~state.val[6]!) &&& state.val[11]!),
-    state.val[2]! ^^^ ((~~~state.val[7]!) &&& state.val[12]!),
-    state.val[3]! ^^^ ((~~~state.val[8]!) &&& state.val[13]!),
-    state.val[4]! ^^^ ((~~~state.val[9]!) &&& state.val[14]!),
-    state.val[5]! ^^^ ((~~~state.val[10]!) &&& state.val[15]!),
-    state.val[6]! ^^^ ((~~~state.val[11]!) &&& state.val[16]!),
-    state.val[7]! ^^^ ((~~~state.val[12]!) &&& state.val[17]!),
-    state.val[8]! ^^^ ((~~~state.val[13]!) &&& state.val[18]!),
-    state.val[9]! ^^^ ((~~~state.val[14]!) &&& state.val[19]!),
-    state.val[10]! ^^^ ((~~~state.val[15]!) &&& state.val[20]!),
-    state.val[11]! ^^^ ((~~~state.val[16]!) &&& state.val[21]!),
-    state.val[12]! ^^^ ((~~~state.val[17]!) &&& state.val[22]!),
-    state.val[13]! ^^^ ((~~~state.val[18]!) &&& state.val[23]!),
-    state.val[14]! ^^^ ((~~~state.val[19]!) &&& state.val[24]!),
-    state.val[15]! ^^^ ((~~~state.val[20]!) &&& state.val[0]!),
-    state.val[16]! ^^^ ((~~~state.val[21]!) &&& state.val[1]!),
-    state.val[17]! ^^^ ((~~~state.val[22]!) &&& state.val[2]!),
-    state.val[18]! ^^^ ((~~~state.val[23]!) &&& state.val[3]!),
-    state.val[19]! ^^^ ((~~~state.val[24]!) &&& state.val[4]!),
-    state.val[20]! ^^^ ((~~~state.val[0]!) &&& state.val[5]!),
-    state.val[21]! ^^^ ((~~~state.val[1]!) &&& state.val[6]!),
-    state.val[22]! ^^^ ((~~~state.val[2]!) &&& state.val[7]!),
-    state.val[23]! ^^^ ((~~~state.val[3]!) &&& state.val[8]!),
-    state.val[24]! ^^^ ((~~~state.val[4]!) &&& state.val[9]!)]
+    state.val[0]!  ^^^ ((~~~state.val[1]!)  &&& state.val[2]!),
+    state.val[1]!  ^^^ ((~~~state.val[2]!)  &&& state.val[3]!),
+    state.val[2]!  ^^^ ((~~~state.val[3]!)  &&& state.val[4]!),
+    state.val[3]!  ^^^ ((~~~state.val[4]!)  &&& state.val[0]!),
+    state.val[4]!  ^^^ ((~~~state.val[0]!)  &&& state.val[1]!),
+    state.val[5]!  ^^^ ((~~~state.val[6]!)  &&& state.val[7]!),
+    state.val[6]!  ^^^ ((~~~state.val[7]!)  &&& state.val[8]!),
+    state.val[7]!  ^^^ ((~~~state.val[8]!)  &&& state.val[9]!),
+    state.val[8]!  ^^^ ((~~~state.val[9]!)  &&& state.val[5]!),
+    state.val[9]!  ^^^ ((~~~state.val[5]!)  &&& state.val[6]!),
+    state.val[10]! ^^^ ((~~~state.val[11]!) &&& state.val[12]!),
+    state.val[11]! ^^^ ((~~~state.val[12]!) &&& state.val[13]!),
+    state.val[12]! ^^^ ((~~~state.val[13]!) &&& state.val[14]!),
+    state.val[13]! ^^^ ((~~~state.val[14]!) &&& state.val[10]!),
+    state.val[14]! ^^^ ((~~~state.val[10]!) &&& state.val[11]!),
+    state.val[15]! ^^^ ((~~~state.val[16]!) &&& state.val[17]!),
+    state.val[16]! ^^^ ((~~~state.val[17]!) &&& state.val[18]!),
+    state.val[17]! ^^^ ((~~~state.val[18]!) &&& state.val[19]!),
+    state.val[18]! ^^^ ((~~~state.val[19]!) &&& state.val[15]!),
+    state.val[19]! ^^^ ((~~~state.val[15]!) &&& state.val[16]!),
+    state.val[20]! ^^^ ((~~~state.val[21]!) &&& state.val[22]!),
+    state.val[21]! ^^^ ((~~~state.val[22]!) &&& state.val[23]!),
+    state.val[22]! ^^^ ((~~~state.val[23]!) &&& state.val[24]!),
+    state.val[23]! ^^^ ((~~~state.val[24]!) &&& state.val[20]!),
+    state.val[24]! ^^^ ((~~~state.val[20]!) &&& state.val[21]!)]
 
 set_option maxHeartbeats 16000000 in
 @[spec]
@@ -731,82 +717,82 @@ def prc_spec (a : Std.Array Std.U64 25#usize) (r : Std.Usize) :
     Std.Array Std.U64 25#usize :=
   let inp : Nat → Std.U64 := fun k =>
     match k with
-    | 0  => rot64 a.val[0]!  0
-    | 1  => rot64 a.val[1]!  36
-    | 2  => rot64 a.val[2]!  3
-    | 3  => rot64 a.val[3]!  41
-    | 4  => rot64 a.val[4]!  18
-    | 5  => rot64 a.val[5]!  1
-    | 6  => rot64 a.val[6]!  44
-    | 7  => rot64 a.val[7]!  10
-    | 8  => rot64 a.val[8]!  45
-    | 9  => rot64 a.val[9]!  2
-    | 10 => rot64 a.val[10]! 62
-    | 11 => rot64 a.val[11]! 6
-    | 12 => rot64 a.val[12]! 43
-    | 13 => rot64 a.val[13]! 15
-    | 14 => rot64 a.val[14]! 61
-    | 15 => rot64 a.val[15]! 28
-    | 16 => rot64 a.val[16]! 55
-    | 17 => rot64 a.val[17]! 25
-    | 18 => rot64 a.val[18]! 21
-    | 19 => rot64 a.val[19]! 56
-    | 20 => rot64 a.val[20]! 27
-    | 21 => rot64 a.val[21]! 20
-    | 22 => rot64 a.val[22]! 39
-    | 23 => rot64 a.val[23]! 8
+    | 0  => rot64 a.val[0]! 0
+    | 1  => rot64 a.val[1]! 1
+    | 2  => rot64 a.val[2]! 62
+    | 3  => rot64 a.val[3]! 28
+    | 4  => rot64 a.val[4]! 27
+    | 5  => rot64 a.val[5]! 36
+    | 6  => rot64 a.val[6]! 44
+    | 7  => rot64 a.val[7]! 6
+    | 8  => rot64 a.val[8]! 55
+    | 9  => rot64 a.val[9]! 20
+    | 10  => rot64 a.val[10]! 3
+    | 11  => rot64 a.val[11]! 10
+    | 12  => rot64 a.val[12]! 43
+    | 13  => rot64 a.val[13]! 25
+    | 14  => rot64 a.val[14]! 39
+    | 15  => rot64 a.val[15]! 41
+    | 16  => rot64 a.val[16]! 45
+    | 17  => rot64 a.val[17]! 15
+    | 18  => rot64 a.val[18]! 21
+    | 19  => rot64 a.val[19]! 8
+    | 20  => rot64 a.val[20]! 18
+    | 21  => rot64 a.val[21]! 2
+    | 22  => rot64 a.val[22]! 61
+    | 23  => rot64 a.val[23]! 56
     | _  => rot64 a.val[24]! 14
   Std.Array.make 25#usize [
-    -- i=0: π[0]=0, π[5]=6, π[10]=12. Chi row + iota RC.
+    -- i=0: π[0]=0, π[1]=6, π[2]=12. Chi row + iota RC.
     inp 0 ^^^ ((~~~ inp 6) &&& inp 12) ^^^ keccak_f.ROUND_CONSTANTS.val[r.val]!,
-    -- i=1: π[1]=15, π[6]=21, π[11]=2
-    inp 15 ^^^ ((~~~ inp 21) &&& inp 2),
-    -- i=2: π[2]=5, π[7]=11, π[12]=17
-    inp 5 ^^^ ((~~~ inp 11) &&& inp 17),
-    -- i=3: π[3]=20, π[8]=1, π[13]=7
-    inp 20 ^^^ ((~~~ inp 1) &&& inp 7),
-    -- i=4: π[4]=10, π[9]=16, π[14]=22
-    inp 10 ^^^ ((~~~ inp 16) &&& inp 22),
-    -- i=5: π[5]=6, π[10]=12, π[15]=18
+    -- i=1: π[1]=6, π[2]=12, π[3]=18
     inp 6 ^^^ ((~~~ inp 12) &&& inp 18),
-    -- i=6: π[6]=21, π[11]=2, π[16]=8
-    inp 21 ^^^ ((~~~ inp 2) &&& inp 8),
-    -- i=7: π[7]=11, π[12]=17, π[17]=23
-    inp 11 ^^^ ((~~~ inp 17) &&& inp 23),
-    -- i=8: π[8]=1, π[13]=7, π[18]=13
-    inp 1 ^^^ ((~~~ inp 7) &&& inp 13),
-    -- i=9: π[9]=16, π[14]=22, π[19]=3
-    inp 16 ^^^ ((~~~ inp 22) &&& inp 3),
-    -- i=10: π[10]=12, π[15]=18, π[20]=24
+    -- i=2: π[2]=12, π[3]=18, π[4]=24
     inp 12 ^^^ ((~~~ inp 18) &&& inp 24),
-    -- i=11: π[11]=2, π[16]=8, π[21]=14
-    inp 2 ^^^ ((~~~ inp 8) &&& inp 14),
-    -- i=12: π[12]=17, π[17]=23, π[22]=4
-    inp 17 ^^^ ((~~~ inp 23) &&& inp 4),
-    -- i=13: π[13]=7, π[18]=13, π[23]=19
-    inp 7 ^^^ ((~~~ inp 13) &&& inp 19),
-    -- i=14: π[14]=22, π[19]=3, π[24]=9
-    inp 22 ^^^ ((~~~ inp 3) &&& inp 9),
-    -- i=15: π[15]=18, π[20]=24, π[0]=0
+    -- i=3: π[3]=18, π[4]=24, π[0]=0
     inp 18 ^^^ ((~~~ inp 24) &&& inp 0),
-    -- i=16: π[16]=8, π[21]=14, π[1]=15
-    inp 8 ^^^ ((~~~ inp 14) &&& inp 15),
-    -- i=17: π[17]=23, π[22]=4, π[2]=5
-    inp 23 ^^^ ((~~~ inp 4) &&& inp 5),
-    -- i=18: π[18]=13, π[23]=19, π[3]=20
-    inp 13 ^^^ ((~~~ inp 19) &&& inp 20),
-    -- i=19: π[19]=3, π[24]=9, π[4]=10
-    inp 3 ^^^ ((~~~ inp 9) &&& inp 10),
-    -- i=20: π[20]=24, π[0]=0, π[5]=6
+    -- i=4: π[4]=24, π[0]=0, π[1]=6
     inp 24 ^^^ ((~~~ inp 0) &&& inp 6),
-    -- i=21: π[21]=14, π[1]=15, π[6]=21
-    inp 14 ^^^ ((~~~ inp 15) &&& inp 21),
-    -- i=22: π[22]=4, π[2]=5, π[7]=11
-    inp 4 ^^^ ((~~~ inp 5) &&& inp 11),
-    -- i=23: π[23]=19, π[3]=20, π[8]=1
+    -- i=5: π[5]=3, π[6]=9, π[7]=10
+    inp 3 ^^^ ((~~~ inp 9) &&& inp 10),
+    -- i=6: π[6]=9, π[7]=10, π[8]=16
+    inp 9 ^^^ ((~~~ inp 10) &&& inp 16),
+    -- i=7: π[7]=10, π[8]=16, π[9]=22
+    inp 10 ^^^ ((~~~ inp 16) &&& inp 22),
+    -- i=8: π[8]=16, π[9]=22, π[5]=3
+    inp 16 ^^^ ((~~~ inp 22) &&& inp 3),
+    -- i=9: π[9]=22, π[5]=3, π[6]=9
+    inp 22 ^^^ ((~~~ inp 3) &&& inp 9),
+    -- i=10: π[10]=1, π[11]=7, π[12]=13
+    inp 1 ^^^ ((~~~ inp 7) &&& inp 13),
+    -- i=11: π[11]=7, π[12]=13, π[13]=19
+    inp 7 ^^^ ((~~~ inp 13) &&& inp 19),
+    -- i=12: π[12]=13, π[13]=19, π[14]=20
+    inp 13 ^^^ ((~~~ inp 19) &&& inp 20),
+    -- i=13: π[13]=19, π[14]=20, π[10]=1
     inp 19 ^^^ ((~~~ inp 20) &&& inp 1),
-    -- i=24: π[24]=9, π[4]=10, π[9]=16
-    inp 9 ^^^ ((~~~ inp 10) &&& inp 16)
+    -- i=14: π[14]=20, π[10]=1, π[11]=7
+    inp 20 ^^^ ((~~~ inp 1) &&& inp 7),
+    -- i=15: π[15]=4, π[16]=5, π[17]=11
+    inp 4 ^^^ ((~~~ inp 5) &&& inp 11),
+    -- i=16: π[16]=5, π[17]=11, π[18]=17
+    inp 5 ^^^ ((~~~ inp 11) &&& inp 17),
+    -- i=17: π[17]=11, π[18]=17, π[19]=23
+    inp 11 ^^^ ((~~~ inp 17) &&& inp 23),
+    -- i=18: π[18]=17, π[19]=23, π[15]=4
+    inp 17 ^^^ ((~~~ inp 23) &&& inp 4),
+    -- i=19: π[19]=23, π[15]=4, π[16]=5
+    inp 23 ^^^ ((~~~ inp 4) &&& inp 5),
+    -- i=20: π[20]=2, π[21]=8, π[22]=14
+    inp 2 ^^^ ((~~~ inp 8) &&& inp 14),
+    -- i=21: π[21]=8, π[22]=14, π[23]=15
+    inp 8 ^^^ ((~~~ inp 14) &&& inp 15),
+    -- i=22: π[22]=14, π[23]=15, π[24]=21
+    inp 14 ^^^ ((~~~ inp 15) &&& inp 21),
+    -- i=23: π[23]=15, π[24]=21, π[20]=2
+    inp 15 ^^^ ((~~~ inp 21) &&& inp 2),
+    -- i=24: π[24]=21, π[20]=2, π[21]=8
+    inp 21 ^^^ ((~~~ inp 2) &&& inp 8)
   ]
 
 /-- Bridge 2: the intermediate `prc_spec` equals the 4-layer composite
@@ -831,28 +817,28 @@ theorem lift_theta_applied_bv_0 (s : state.KeccakState) :
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_1 (s : state.KeccakState) :
     ((lift_theta_applied s).val[1]!).bv =
-      lift_lane_bv ((s.st.val[1]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
-                   ((s.st.val[1]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[5]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
+                   ((s.st.val[5]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_2 (s : state.KeccakState) :
     ((lift_theta_applied s).val[2]!).bv =
-      lift_lane_bv ((s.st.val[2]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
-                   ((s.st.val[2]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[10]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
+                   ((s.st.val[10]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_3 (s : state.KeccakState) :
     ((lift_theta_applied s).val[3]!).bv =
-      lift_lane_bv ((s.st.val[3]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
-                   ((s.st.val[3]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[15]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
+                   ((s.st.val[15]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_4 (s : state.KeccakState) :
     ((lift_theta_applied s).val[4]!).bv =
-      lift_lane_bv ((s.st.val[4]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
-                   ((s.st.val[4]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[20]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
+                   ((s.st.val[20]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_5 (s : state.KeccakState) :
     ((lift_theta_applied s).val[5]!).bv =
-      lift_lane_bv ((s.st.val[5]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
-                   ((s.st.val[5]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[1]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
+                   ((s.st.val[1]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_6 (s : state.KeccakState) :
     ((lift_theta_applied s).val[6]!).bv =
@@ -861,28 +847,28 @@ theorem lift_theta_applied_bv_6 (s : state.KeccakState) :
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_7 (s : state.KeccakState) :
     ((lift_theta_applied s).val[7]!).bv =
-      lift_lane_bv ((s.st.val[7]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
-                   ((s.st.val[7]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[11]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
+                   ((s.st.val[11]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_8 (s : state.KeccakState) :
     ((lift_theta_applied s).val[8]!).bv =
-      lift_lane_bv ((s.st.val[8]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
-                   ((s.st.val[8]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[16]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
+                   ((s.st.val[16]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_9 (s : state.KeccakState) :
     ((lift_theta_applied s).val[9]!).bv =
-      lift_lane_bv ((s.st.val[9]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
-                   ((s.st.val[9]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[21]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
+                   ((s.st.val[21]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_10 (s : state.KeccakState) :
     ((lift_theta_applied s).val[10]!).bv =
-      lift_lane_bv ((s.st.val[10]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
-                   ((s.st.val[10]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[2]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
+                   ((s.st.val[2]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_11 (s : state.KeccakState) :
     ((lift_theta_applied s).val[11]!).bv =
-      lift_lane_bv ((s.st.val[11]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
-                   ((s.st.val[11]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[7]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
+                   ((s.st.val[7]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_12 (s : state.KeccakState) :
     ((lift_theta_applied s).val[12]!).bv =
@@ -891,28 +877,28 @@ theorem lift_theta_applied_bv_12 (s : state.KeccakState) :
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_13 (s : state.KeccakState) :
     ((lift_theta_applied s).val[13]!).bv =
-      lift_lane_bv ((s.st.val[13]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
-                   ((s.st.val[13]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[17]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
+                   ((s.st.val[17]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_14 (s : state.KeccakState) :
     ((lift_theta_applied s).val[14]!).bv =
-      lift_lane_bv ((s.st.val[14]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
-                   ((s.st.val[14]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[22]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
+                   ((s.st.val[22]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_15 (s : state.KeccakState) :
     ((lift_theta_applied s).val[15]!).bv =
-      lift_lane_bv ((s.st.val[15]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
-                   ((s.st.val[15]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[3]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
+                   ((s.st.val[3]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_16 (s : state.KeccakState) :
     ((lift_theta_applied s).val[16]!).bv =
-      lift_lane_bv ((s.st.val[16]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
-                   ((s.st.val[16]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[8]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
+                   ((s.st.val[8]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_17 (s : state.KeccakState) :
     ((lift_theta_applied s).val[17]!).bv =
-      lift_lane_bv ((s.st.val[17]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
-                   ((s.st.val[17]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[13]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
+                   ((s.st.val[13]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_18 (s : state.KeccakState) :
     ((lift_theta_applied s).val[18]!).bv =
@@ -921,28 +907,28 @@ theorem lift_theta_applied_bv_18 (s : state.KeccakState) :
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_19 (s : state.KeccakState) :
     ((lift_theta_applied s).val[19]!).bv =
-      lift_lane_bv ((s.st.val[19]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
-                   ((s.st.val[19]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[23]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
+                   ((s.st.val[23]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_20 (s : state.KeccakState) :
     ((lift_theta_applied s).val[20]!).bv =
-      lift_lane_bv ((s.st.val[20]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
-                   ((s.st.val[20]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[4]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
+                   ((s.st.val[4]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_21 (s : state.KeccakState) :
     ((lift_theta_applied s).val[21]!).bv =
-      lift_lane_bv ((s.st.val[21]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
-                   ((s.st.val[21]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[9]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
+                   ((s.st.val[9]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_22 (s : state.KeccakState) :
     ((lift_theta_applied s).val[22]!).bv =
-      lift_lane_bv ((s.st.val[22]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
-                   ((s.st.val[22]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[14]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
+                   ((s.st.val[14]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_23 (s : state.KeccakState) :
     ((lift_theta_applied s).val[23]!).bv =
-      lift_lane_bv ((s.st.val[23]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
-                   ((s.st.val[23]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[19]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
+                   ((s.st.val[19]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 theorem lift_theta_applied_bv_24 (s : state.KeccakState) :
     ((lift_theta_applied s).val[24]!).bv =
@@ -997,7 +983,7 @@ theorem prc_lift_spec (s : state.KeccakState) (hi_lt : s.i.val < 24) :
   have hss  : (↑s.st  : List lane.Lane2U32).length = 25  := by exact s.st.2
   have hlane : ∀ (L : lane.Lane2U32), L.val.length = 2 := fun L => L.2
   apply Subtype.ext
-  unfold prc_spec lift_perm impl_perm impl_swap lift_lane_maybe_swap
+  unfold prc_spec lift_perm impl_perm impl_swap lift_lane_maybe_swap transpose_perm
   simp (config := { decide := true }) only [Std.Array.make, List.ofFn_succ, List.ofFn_zero,
     Fin.val_succ, Fin.val_zero, Nat.succ_eq_add_one, Nat.zero_add, Nat.reduceAdd, Nat.reduceMul,
     Nat.reduceDiv, Nat.reduceMod, reduceIte]

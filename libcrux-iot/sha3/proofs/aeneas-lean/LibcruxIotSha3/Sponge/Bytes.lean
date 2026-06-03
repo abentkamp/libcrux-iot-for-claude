@@ -110,12 +110,13 @@ private theorem rate_div_8_ok (RATE : Std.Usize) :
 /-! ### Helpers for textbook-form posts. -/
 
 /-- Indexing `Foundation.lift s` at a `Fin 25` returns the lifted
-    interleaved halves of `s.st[k]`.  Public companion to the `private`
-    `lift_getElem` in `Equivalence/ThetaLiftDefs.lean`. -/
+    interleaved halves of `s.st[transpose_perm k]` (impl-side index after
+    the spec↔impl transpose). -/
 private theorem lift_getElem_bytes (s : state.KeccakState) (k : Fin 25) :
     (Foundation.lift s).val[k.val]! =
-      (⟨lift_lane_bv ((s.st.val[k.val]!).val[0]!.bv)
-                     ((s.st.val[k.val]!).val[1]!.bv)⟩ : Std.U64) := by
+      (⟨lift_lane_bv ((s.st.val[(Foundation.transpose_perm k).val]!).val[0]!.bv)
+                     ((s.st.val[(Foundation.transpose_perm k).val]!).val[1]!.bv)⟩
+        : Std.U64) := by
   unfold Foundation.lift Foundation.lift_lane
   change (List.ofFn _)[k.val]! = _
   rw [getElem!_pos _ k.val (by simpa using k.isLt), List.getElem_ofFn]
@@ -182,26 +183,25 @@ private theorem toLEBytes64_getElem!_eq_ofNat_shift_and
 
 /-- `store_block_byte_at s b` (the value the strong store-loop produces at
     byte position `b`) equals byte `b%8` of the LE-byte split of the spec-side
-    `(Foundation.lift s).val[5*((b/8)%5) + (b/8)/5]!`. -/
+    `(Foundation.lift s).val[b/8]!`. Under the new spec layout, FIPS byte
+    block `b/8` lives at spec position `b/8` directly (no transpose). -/
 private theorem store_block_byte_at_eq_toLEBytes
     (s : state.KeccakState) (b : Nat) (hb : b / 8 < 25) :
     store_block_byte_at s b =
       ⟨(BitVec.toLEBytes
-          ((Foundation.lift s).val[5 * ((b / 8) % 5) + (b / 8) / 5]!).bv)[b % 8]!⟩ := by
+          ((Foundation.lift s).val[b / 8]!).bv)[b % 8]!⟩ := by
   -- Unfold store_block_byte_at; LHS is ⟨BitVec.ofNat 8 ((u64.bv.toNat >>> (8*(b%8))) &&& 0xff)⟩.
   unfold store_block_byte_at
   -- p < 25.
-  have hp_lt : 5 * ((b / 8) % 5) + (b / 8) / 5 < 25 := by
-    have h1 : (b / 8) % 5 < 5 := Nat.mod_lt _ (by decide)
-    have h2 : (b / 8) / 5 < 5 :=
-      (Nat.div_lt_iff_lt_mul (by decide : 0 < 5)).mpr (by omega)
-    omega
-  -- (Foundation.lift s).val[p]!.bv = lift_lane_bv ...
-  have h_lift : ((Foundation.lift s).val[5 * ((b / 8) % 5) + (b / 8) / 5]!).bv =
+  have hp_lt : b / 8 < 25 := hb
+  -- (Foundation.lift s).val[p]!.bv = lift_lane_bv (s.st[transpose_perm p]) ...
+  have h_T : (Foundation.transpose_perm ⟨b / 8, hp_lt⟩).val
+              = 5 * ((b / 8) % 5) + (b / 8) / 5 := rfl
+  have h_lift : ((Foundation.lift s).val[b / 8]!).bv =
       lift_lane_bv
         ((s.st.val[5 * ((b / 8) % 5) + (b / 8) / 5]!).val[0]!).bv
         ((s.st.val[5 * ((b / 8) % 5) + (b / 8) / 5]!).val[1]!).bv := by
-    rw [lift_getElem_bytes s ⟨_, hp_lt⟩]
+    rw [lift_getElem_bytes s ⟨_, hp_lt⟩, h_T]
   -- `lift_lane (s.st.val[p]!)).bv = lift_lane_bv ...` (by lift_lane def).
   have h_ll_bv :
       (Foundation.lift_lane (s.st.val[5 * ((b / 8) % 5) + (b / 8) / 5]!)).bv =
@@ -214,7 +214,7 @@ private theorem store_block_byte_at_eq_toLEBytes
   show (BitVec.ofNat 8 _).toNat = _
   -- Reduce the RHS via the toLEBytes lemma.
   have h_bytes := toLEBytes64_getElem!_eq_ofNat_shift_and
-    ((Foundation.lift s).val[5 * ((b / 8) % 5) + (b / 8) / 5]!).bv
+    ((Foundation.lift s).val[b / 8]!).bv
     (b % 8) hb_mod
   rw [h_bytes, h_lift]
   -- Both sides are now `BitVec.ofNat 8 ((lift_lane_bv _ _).toNat >>> (8*(b%8)) &&& 0xff)`.
@@ -246,14 +246,12 @@ theorem state.KeccakState.load_block_spec
         r.i = s.i
         ∧ ∀ k : Nat, k < 25 →
             ((Foundation.lift r).val[k]!).bv =
-              (if 5 * (k % 5) + k / 5 < RATE.val / 8 then
+              (if k < RATE.val / 8 then
                   ((Foundation.lift s).val[k]!).bv ^^^
                     (BitVec.zeroExtend 64
-                        (((Lane2U32_from_4byte_LE_pairs blocks start
-                            (5 * (k % 5) + k / 5)).val[1]!).bv) <<< 32
+                        (((Lane2U32_from_4byte_LE_pairs blocks start k).val[1]!).bv) <<< 32
                      ||| BitVec.zeroExtend 64
-                        (((Lane2U32_from_4byte_LE_pairs blocks start
-                            (5 * (k % 5) + k / 5)).val[0]!).bv))
+                        (((Lane2U32_from_4byte_LE_pairs blocks start k).val[0]!).bv))
                else ((Foundation.lift s).val[k]!).bv)
     ⌝ ⦄ := by
   have h_blk_len : RATE.val ≤ blocks.val.length := by omega
@@ -290,31 +288,36 @@ theorem state.KeccakState.load_block_spec
         ⟨0#usize, i2⟩ state_flat1 s h_loop0_le h_loop0_bnd rfl)
   obtain ⟨h_r_i, h_post2⟩ := h_post
   obtain ⟨h_lanes, h_unchanged⟩ := h_post2
-  -- Build the per-cell BV post.
+  -- Build the per-cell BV post. Under the new spec layout, spec index `k`
+  -- maps to impl index `transpose_perm k = 5*(k%5) + k/5` (where the
+  -- impl's loop0 stored byte block `k`).
   have h_per_cell : ∀ k : Nat, k < 25 →
       ((Foundation.lift r_final).val[k]!).bv =
-        (if 5 * (k % 5) + k / 5 < RATE.val / 8 then
+        (if k < RATE.val / 8 then
             ((Foundation.lift s).val[k]!).bv ^^^
               (BitVec.zeroExtend 64
-                  (((Lane2U32_from_4byte_LE_pairs blocks start
-                      (5 * (k % 5) + k / 5)).val[1]!).bv) <<< 32
+                  (((Lane2U32_from_4byte_LE_pairs blocks start k).val[1]!).bv) <<< 32
                ||| BitVec.zeroExtend 64
-                  (((Lane2U32_from_4byte_LE_pairs blocks start
-                      (5 * (k % 5) + k / 5)).val[0]!).bv))
+                  (((Lane2U32_from_4byte_LE_pairs blocks start k).val[0]!).bv))
          else ((Foundation.lift s).val[k]!).bv) := by
     intro k hk_25
-    -- Apply lift_getElem_bytes at k.
+    -- Apply lift_getElem_bytes at k. Under new lift, this reads impl
+    -- position `transpose_perm k = 5*(k%5) + k/5`.
     rw [lift_getElem_bytes r_final ⟨k, hk_25⟩,
         lift_getElem_bytes s ⟨k, hk_25⟩]
-    show lift_lane_bv (r_final.st.val[k]!.val[0]!.bv) (r_final.st.val[k]!.val[1]!.bv) = _
-    -- Let b = 5*(k%5) + k/5. By involution, k = 5*(b%5) + b/5.
+    have h_T_val : (Foundation.transpose_perm ⟨k, hk_25⟩).val
+                    = 5 * (k % 5) + k / 5 := rfl
+    rw [h_T_val]
+    show lift_lane_bv (r_final.st.val[5 * (k % 5) + k / 5]!.val[0]!.bv)
+                      (r_final.st.val[5 * (k % 5) + k / 5]!.val[1]!.bv) = _
+    -- Let b = 5*(k%5) + k/5 = transpose_perm k. Loop0/Loop1 use this index.
     set b := 5 * (k % 5) + k / 5 with hb_def
     have hk_div_5 : k / 5 < 5 := by
       have : k < 5 * 5 := by omega
       exact (Nat.div_lt_iff_lt_mul (by decide : 0 < 5)).mpr this
     have hk_mod_5 : k % 5 < 5 := Nat.mod_lt _ (by decide)
     have hb_lt_25 : b < 25 := by show 5 * (k % 5) + k / 5 < 25; omega
-    -- k = 5 * (b % 5) + b / 5.
+    -- b%5 = k/5; b/5 = k%5.
     have h_b_mod : b % 5 = k / 5 := by
       show (5 * (k % 5) + k / 5) % 5 = k / 5
       rw [Nat.add_comm, Nat.add_mul_mod_self_left]
@@ -324,53 +327,50 @@ theorem state.KeccakState.load_block_spec
       rw [Nat.add_comm, Nat.add_mul_div_left _ _ (by decide : 0 < 5)]
       have : k / 5 / 5 = 0 := Nat.div_eq_of_lt hk_div_5
       omega
-    have h_inv : 5 * (b % 5) + b / 5 = k := by
-      rw [h_b_mod, h_b_div]; omega
-    by_cases h_b_lt : b < RATE.val / 8
-    · -- The lane was touched in Loop1. Use h_lanes and the interleave identity.
-      rw [if_pos h_b_lt]
-      have h_b_lt_i2 : b < i2.val := by rw [h_i2_val]; exact h_b_lt
-      -- Loop1's strong post for j = b: lift_lane_bv r.st[5*(b%5)+b/5] = loop1_lane_at s state_flat1 b.
-      have h_lane := h_lanes b h_b_lt_i2 hb_lt_25
-      -- The index 5*(b%5)+b/5 = k.
-      rw [h_inv] at h_lane
-      -- Loop0's post for j = b: state_flat1[b] is the interleave_bv pair.
-      have h_sf := h_state_flat1 b h_b_lt_i2 hb_lt_25
-      -- Unfold loop1_lane_at and apply lift_lane_bv_xor.
+    -- Under the new layout, byte block index = spec index k. The impl's
+    -- loop ranges over j ∈ [0, RATE/8), so we want `k < RATE/8` to mean
+    -- the lane was touched. But the impl stored byte block j at impl idx
+    -- transpose(j); we read it back at impl idx b = transpose(k). So the
+    -- impl iteration that touched impl idx b is j = transpose(b) = k.
+    by_cases h_k_lt : k < RATE.val / 8
+    · rw [if_pos h_k_lt]
+      -- The lane at impl idx b was touched in Loop1 at iteration j = k
+      -- (since transpose(b) = k). Use h_lanes at iteration b? No, h_lanes
+      -- is iteration-indexed; iteration j ∈ [0, i2.val), and the j-th
+      -- iteration touches impl idx 5*(j%5)+j/5 = transpose(j). For
+      -- impl idx b, the touching iteration is transpose⁻¹(b) = k.
+      have h_k_lt_i2 : k < i2.val := by rw [h_i2_val]; exact h_k_lt
+      have h_lane := h_lanes k h_k_lt_i2 hk_25
+      -- h_lane gives: lift_lane_bv r.st[5*(k%5)+k/5] = loop1_lane_at s state_flat1 k.
+      -- i.e., lift_lane_bv r.st[b] = ... (since b = transpose(k))
       rw [h_lane]
       unfold loop1_lane_at
-      -- Goal: lift_lane_bv (s_lane[0].bv ^^^ state_flat1[b][0].bv)
-      --                    (s_lane[1].bv ^^^ state_flat1[b][1].bv)
-      --     = lift_lane_bv s.st[k].val[0].bv s.st[k].val[1].bv ^^^
-      --       (((Lane2U32_from_4byte_LE_pairs...).val[1].bv.zeroExtend 64) <<< 32 |||
-      --        (Lane2U32_from_4byte_LE_pairs...).val[0].bv.zeroExtend 64)
-      simp only [h_inv]
       rw [← lift_lane_bv_xor]
-      apply congrArg ((lift_lane_bv (s.st.val[k]!.val[0]!.bv) (s.st.val[k]!.val[1]!.bv)) ^^^ ·)
-      -- Goal: lift_lane_bv state_flat1[b].val[0].bv state_flat1[b].val[1].bv = ...zeroExtend...
-      -- From h_sf: ((state_flat1[b])[0].bv, (state_flat1[b])[1].bv) = interleave_bv (...) (...).
-      have h_sf1 : (state_flat1.val[b]!).val[0]!.bv =
-          (interleave_bv ((Lane2U32_from_4byte_LE_pairs blocks start b).val[0]!).bv
-                         ((Lane2U32_from_4byte_LE_pairs blocks start b).val[1]!).bv).1 := by
+      -- The s.st side: lift_lane_bv (s.st[transpose_perm k][0]) (...[1])
+      -- = lift_lane_bv (s.st[5*(k%5)+k/5][0]) (...[1])
+      -- We need this to match (lift s)[k] -- which is what we already showed.
+      apply congrArg ((lift_lane_bv (s.st.val[5 * (k % 5) + k / 5]!.val[0]!.bv)
+                                    (s.st.val[5 * (k % 5) + k / 5]!.val[1]!.bv)) ^^^ ·)
+      -- h_sf gives: state_flat1[k] = (interleave_bv ...).
+      have h_sf := h_state_flat1 k h_k_lt_i2 hk_25
+      have h_sf1 : (state_flat1.val[k]!).val[0]!.bv =
+          (interleave_bv ((Lane2U32_from_4byte_LE_pairs blocks start k).val[0]!).bv
+                         ((Lane2U32_from_4byte_LE_pairs blocks start k).val[1]!).bv).1 := by
         have := h_sf; exact (Prod.mk.injEq .. |>.mp this).1
-      have h_sf2 : (state_flat1.val[b]!).val[1]!.bv =
-          (interleave_bv ((Lane2U32_from_4byte_LE_pairs blocks start b).val[0]!).bv
-                         ((Lane2U32_from_4byte_LE_pairs blocks start b).val[1]!).bv).2 := by
+      have h_sf2 : (state_flat1.val[k]!).val[1]!.bv =
+          (interleave_bv ((Lane2U32_from_4byte_LE_pairs blocks start k).val[0]!).bv
+                         ((Lane2U32_from_4byte_LE_pairs blocks start k).val[1]!).bv).2 := by
         have := h_sf; exact (Prod.mk.injEq .. |>.mp this).2
       rw [h_sf1, h_sf2]
-      -- Apply interleave_bv_lift_eq.
       have h_ib := interleave_bv_lift_eq
-        ((Lane2U32_from_4byte_LE_pairs blocks start b).val[0]!).bv
-        ((Lane2U32_from_4byte_LE_pairs blocks start b).val[1]!).bv
-      -- h_ib is `let (e,o) := ... in lift_lane_bv e o = ...`.
+        ((Lane2U32_from_4byte_LE_pairs blocks start k).val[0]!).bv
+        ((Lane2U32_from_4byte_LE_pairs blocks start k).val[1]!).bv
       simp only at h_ib
       exact h_ib
-    · -- Untouched lane. Use h_unchanged.
-      rw [if_neg h_b_lt]
-      have h_b_ge_i2 : i2.val ≤ b := by rw [h_i2_val]; omega
-      have h_unch := h_unchanged b h_b_ge_i2 hb_lt_25
-      -- h_unch : r_final.st.val[5*(b%5)+b/5]! = s.st.val[5*(b%5)+b/5]!
-      rw [h_inv] at h_unch
+    · rw [if_neg h_k_lt]
+      have h_k_ge_i2 : i2.val ≤ k := by rw [h_i2_val]; omega
+      have h_unch := h_unchanged k h_k_ge_i2 hk_25
+      -- h_unch : r_final.st.val[5*(k%5)+k/5]! = s.st.val[5*(k%5)+k/5]!
       rw [h_unch]
   -- Assemble: walk the body of `load_block`, rewriting each step.
   apply triple_of_ok_bytes (v := r_final) _ ⟨h_r_i, h_per_cell⟩
@@ -411,7 +411,7 @@ theorem state.KeccakState.store_block_spec
         r.val.length = out.val.length
         ∧ ∀ k : Nat, k < RATE.val →
             r.val[k]! = ⟨(BitVec.toLEBytes
-              ((Foundation.lift s).val[5 * ((k / 8) % 5) + (k / 8) / 5]!).bv)[k % 8]!⟩
+              ((Foundation.lift s).val[k / 8]!).bv)[k % 8]!⟩
     ⌝ ⦄ := by
   have h_RATE_div_le : RATE.val / 8 ≤ 25 := by omega
   have h_RATE_div_mul : 8 * (RATE.val / 8) = RATE.val := by
@@ -435,7 +435,7 @@ theorem state.KeccakState.store_block_spec
   -- We rewrite via `store_block_byte_at_eq_toLEBytes`.
   have h_r_textbook : ∀ k : Nat, k < RATE.val →
       r.val[k]! = ⟨(BitVec.toLEBytes
-        ((Foundation.lift s).val[5 * ((k / 8) % 5) + (k / 8) / 5]!).bv)[k % 8]!⟩ := by
+        ((Foundation.lift s).val[k / 8]!).bv)[k % 8]!⟩ := by
     intro k hk_RATE
     have hk_8idiv : k < 8 * i_div.val := by rw [h_div_val]; omega
     have hk_200 : k < 8 * 25 := by omega
@@ -443,7 +443,6 @@ theorem state.KeccakState.store_block_spec
       have : k < 8 * 25 := hk_200
       omega
     have h_loop := h_r_bytes k hk_8idiv hk_200
-    -- h_loop : r.val[k]! = store_block_byte_at s k
     rw [h_loop]
     exact store_block_byte_at_eq_toLEBytes s k hk_div
   apply triple_of_ok_bytes (v := r) _ ⟨h_r_len, h_r_textbook⟩
@@ -469,14 +468,14 @@ theorem state.KeccakState.load_block_full_spec
         r.i = s.i
         ∧ ∀ k : Nat, k < 25 →
             ((Foundation.lift r).val[k]!).bv =
-              (if 5 * (k % 5) + k / 5 < RATE.val / 8 then
+              (if k < RATE.val / 8 then
                   ((Foundation.lift s).val[k]!).bv ^^^
                     (BitVec.zeroExtend 64
                         (((Lane2U32_from_4byte_LE_pairs (Std.Array.to_slice blocks) start
-                            (5 * (k % 5) + k / 5)).val[1]!).bv) <<< 32
+                            k).val[1]!).bv) <<< 32
                      ||| BitVec.zeroExtend 64
                         (((Lane2U32_from_4byte_LE_pairs (Std.Array.to_slice blocks) start
-                            (5 * (k % 5) + k / 5)).val[0]!).bv))
+                            k).val[0]!).bv))
                else ((Foundation.lift s).val[k]!).bv)
     ⌝ ⦄ := by
   -- `Array.to_slice` preserves `.val`; the array has length 200.

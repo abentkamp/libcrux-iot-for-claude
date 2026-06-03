@@ -140,13 +140,13 @@ position `k % rate`. -/
     `sponge.squeeze` produces for byte `k = b*rate + j` of the OUTPUT
     (with `b = k/rate`, `j = k % rate < rate`). -/
 def squeeze_byte_at (s : Std.Array Std.U64 25#usize) (j : Nat) : Std.U8 :=
-  ⟨(BitVec.toLEBytes (s.val[5 * ((j / 8) % 5) + (j / 8) / 5]!).bv)[j % 8]!⟩
+  ⟨(BitVec.toLEBytes (s.val[j / 8]!).bv)[j % 8]!⟩
 
 /-! The squeeze closure stored state is `(rate, state)`. When invoked at
     index `k`, it computes `b = k/rate`, `j = k - b*rate`, runs
-    `iterate_keccak_f b state` to get `s_b`, then extracts byte
-    `byte_lane_idx (j/8) = 5*((j/8)%5) + (j/8)/5` of `s_b` and projects
-    byte `j%8` of the little-endian representation.
+    `iterate_keccak_f b state` to get `s_b`, then extracts byte block
+    `j/8` of `s_b` directly (under the new spec layout, no transpose) and
+    projects byte `j%8` of the little-endian representation.
 
     To package the closure-call result as a clean equation we need: -/
 
@@ -599,78 +599,25 @@ private theorem squeeze_closure_call_eq
     symm; exact usize_ofNat_toNat _ h_div_le_max
   have h_iter' : sponge.iterate_keccak_f b state = .ok s_b := by
     rw [h_b_eq_iter]; exact h_iter
-  -- Step 5: i2 = j / 8. (8 ≠ 0)
+  -- Step 5: i2 = j / 8. Under the new spec layout, byte block j/8 lives at
+  -- spec position j/8 directly (no transpose); no byte_lane_idx step is
+  -- needed in the extracted closure.
   obtain ⟨i2, h_i2_eq, h_i2_val_raw, _⟩ :=
     Std.UScalar.div_bv_spec j (y := (8#usize : Std.Usize)) (by decide)
   have h_i2_val : i2.val = j.val / 8 := by rw [h_i2_val_raw]; rfl
-  -- Step 6: i3 = byte_lane_idx i2 = 5*(i2%5) + i2/5.
-  -- Unfold byte_lane_idx and walk it.
   -- i2.val < 25 since j.val < rate.val ≤ 200 and i2 = j/8.
   have h_i2_lt : i2.val < 25 := by
     rw [h_i2_val]
     have : j.val < 200 := lt_of_lt_of_le h_j_lt_rate h_rate_bnd
     omega
-  -- byte_lane_idx i2.
-  have h_5_nz : (5#usize : Std.Usize).val ≠ 0 := by decide
-  obtain ⟨r5, h_r5_eq, h_r5_val_raw, _⟩ :=
-    Std.WP.spec_imp_exists
-      (Std.UScalar.rem_bv_spec i2 (y := (5#usize : Std.Usize)) h_5_nz)
-  have h_r5_val : r5.val = i2.val % 5 := by rw [h_r5_val_raw]; rfl
-  have h_r5_lt : r5.val < 5 := by rw [h_r5_val]; exact Nat.mod_lt _ (by decide)
-  -- i2_mul = 5 * r5.
-  have h_5usize_eq : (5#usize : Std.Usize).val = 5 := rfl
-  have h_5r5_bnd : (5#usize : Std.Usize).val * r5.val ≤ Std.UScalar.max .Usize := by
-    rw [Std.UScalar.max_USize_eq, h_5usize_eq]
-    have h_lt : 5 * r5.val < 25 := by omega
-    have h200 : (200 : Nat) ≤ Std.Usize.max := by scalar_tac
-    omega
-  obtain ⟨i_mul, h_imul_eq, h_imul_val_raw, _⟩ :=
-    Std.WP.spec_imp_exists
-      (Std.UScalar.mul_bv_spec (x := (5#usize : Std.Usize)) (y := r5) h_5r5_bnd)
-  have h_imul_val : i_mul.val = 5 * r5.val := by rw [h_imul_val_raw]; rfl
-  -- d5 = i2 / 5.
-  obtain ⟨d5, h_d5_eq, h_d5_val_raw, _⟩ :=
-    Std.UScalar.div_bv_spec i2 (y := (5#usize : Std.Usize)) h_5_nz
-  have h_d5_val : d5.val = i2.val / 5 := by rw [h_d5_val_raw]; rfl
-  -- i3 = i_mul + d5.
-  have h_d5_lt : d5.val < 5 := by
-    rw [h_d5_val]
-    have : i2.val < 25 := h_i2_lt
-    omega
-  have h_i3_bnd : i_mul.val + d5.val ≤ Std.UScalar.max .Usize := by
-    rw [Std.UScalar.max_USize_eq]
-    have h200 : (200 : Nat) ≤ Std.Usize.max := by scalar_tac
-    have : i_mul.val + d5.val < 25 + 5 := by
-      rw [h_imul_val]; omega
-    omega
-  obtain ⟨i3, h_i3_eq, h_i3_val_raw, _⟩ :=
-    Std.WP.spec_imp_exists
-      (Std.UScalar.add_bv_spec (x := i_mul) (y := d5) h_i3_bnd)
-  have h_i3_val : i3.val = 5 * (i2.val % 5) + i2.val / 5 := by
-    rw [h_i3_val_raw, h_imul_val, h_r5_val, h_d5_val]
-  have h_i3_lt : i3.val < 25 := by
-    rw [h_i3_val]
-    have h_mod : i2.val % 5 < 5 := Nat.mod_lt _ (by decide)
-    have h_div : i2.val / 5 < 5 := by
-      have h_le : i2.val / 5 ≤ 24 / 5 := Nat.div_le_div_right (by omega)
-      omega
-    omega
-  -- Reduce byte_lane_idx i2 to ok i3.
-  have h_byte_lane_eq :
-      sponge.byte_lane_idx i2 = .ok i3 := by
-    unfold sponge.byte_lane_idx
-    rw [h_r5_eq]; simp only [bind_tc_ok]
-    rw [h_imul_eq]; simp only [bind_tc_ok]
-    rw [h_d5_eq]; simp only [bind_tc_ok]
-    rw [h_i3_eq]
-  -- Step 7: i4 = Array.index_usize s_b i3 = s_b.val[i3.val]!.
-  have h_i3_lt_sb : i3.val < s_b.val.length := by
+  -- Step 7: i4 = Array.index_usize s_b i2 = s_b.val[i2.val]!.
+  have h_i2_lt_sb : i2.val < s_b.val.length := by
     have : s_b.val.length = 25 := s_b.property
-    rw [this]; exact h_i3_lt
-  have h_i3_lt_sb' : i3.val < s_b.length := by
-    show i3.val < s_b.val.length; exact h_i3_lt_sb
+    rw [this]; exact h_i2_lt
+  have h_i2_lt_sb' : i2.val < s_b.length := by
+    show i2.val < s_b.val.length; exact h_i2_lt_sb
   obtain ⟨i4, h_i4_eq, h_i4_val_eq⟩ :=
-    Std.WP.spec_imp_exists (Std.Array.index_usize_spec s_b i3 h_i3_lt_sb')
+    Std.WP.spec_imp_exists (Std.Array.index_usize_spec s_b i2 h_i2_lt_sb')
   -- Step 8: a1 = U64.to_le_bytes i4
   have h_a1_eq :
       core_models.num.U64.to_le_bytes i4
@@ -692,9 +639,7 @@ private theorem squeeze_closure_call_eq
   obtain ⟨v_final, h_v_final_eq, h_v_final_val⟩ :=
     Std.WP.spec_imp_exists (Std.Array.index_usize_spec a1 i5 h_i5_lt_a1)
   -- Compute v_final's actual byte value.
-  -- First, substitute i4 = s_b.val[i3.val]! (only have value, not def equality).
-  -- Use `set` to fix the lane value.
-  set u : Std.U64 := s_b.val[i3.val]! with hu_def
+  set u : Std.U64 := s_b.val[i2.val]! with hu_def
   have h_i4_eq_u : i4 = u := h_i4_val_eq
   have h_a1_unfold : a1.val
       = (BitVec.toLEBytes u.bv).map (@Std.UScalar.mk .U8) := by
@@ -718,7 +663,7 @@ private theorem squeeze_closure_call_eq
     rw [List.getElem?_eq_getElem (h := by rw [h_len_bytes]; exact h_jmod_lt)]
     rw [Option.getD_some]
     rfl
-  -- Assemble: walk the closure body.
+  -- Assemble: walk the closure body. New closure body (no byte_lane_idx).
   unfold sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU8.call
   show (do
     let b' ← args / rate
@@ -726,30 +671,25 @@ private theorem squeeze_closure_call_eq
     let j' ← args - i1'
     let state_b' ← sponge.iterate_keccak_f b' state
     let i2' ← j' / 8#usize
-    let i3' ← sponge.byte_lane_idx i2'
-    let i4' ← Std.Array.index_usize state_b' i3'
-    let a1' ← core_models.num.U64.to_le_bytes i4'
-    let i5' ← j' % 8#usize
-    Std.Array.index_usize a1' i5') = _
+    let i3' ← Std.Array.index_usize state_b' i2'
+    let a1' ← core_models.num.U64.to_le_bytes i3'
+    let i4' ← j' % 8#usize
+    Std.Array.index_usize a1' i4') = _
   rw [show args / rate = (.ok b : Result Std.Usize) from h_b_eq]; simp only [bind_tc_ok]
   rw [show b * rate = (.ok i1 : Result Std.Usize) from h_i1_eq]; simp only [bind_tc_ok]
   rw [show args - i1 = (.ok j : Result Std.Usize) from h_j_eq]; simp only [bind_tc_ok]
   rw [h_iter']; simp only [bind_tc_ok]
   rw [show j / 8#usize = (.ok i2 : Result Std.Usize) from h_i2_eq]; simp only [bind_tc_ok]
-  rw [h_byte_lane_eq]; simp only [bind_tc_ok]
   rw [h_i4_eq]; simp only [bind_tc_ok]
   rw [h_a1_eq]; simp only [bind_tc_ok]
   rw [show j % 8#usize = (.ok i5 : Result Std.Usize) from h_i5_eq]; simp only [bind_tc_ok]
   rw [h_v_final_eq]
   -- Now goal: .ok v_final = .ok (squeeze_byte_at s_b (k - (k/rate.val)*rate.val))
-  -- Show v_final = squeeze_byte_at s_b ...
-  -- u.bv = s_b.val[i3.val]!.bv where i3.val = 5*((j.val/8)%5) + (j.val/8)/5,
-  -- and j.val = k - k/rate.val*rate.val.
+  -- Under new layout, squeeze_byte_at indexes s_b at (j/8) directly.
   have h_u_eq :
-      u = s_b.val[5 * (((k - k / rate.val * rate.val) / 8) % 5)
-                  + ((k - k / rate.val * rate.val) / 8) / 5]! := by
-    show s_b.val[i3.val]! = _
-    rw [h_i3_val, h_i2_val, h_j_eq_residue]
+      u = s_b.val[(k - k / rate.val * rate.val) / 8]! := by
+    show s_b.val[i2.val]! = _
+    rw [h_i2_val, h_j_eq_residue]
   have h_byte_eq :
       ⟨(BitVec.toLEBytes u.bv)[j.val % 8]!⟩
         = squeeze_byte_at s_b (k - k / rate.val * rate.val) := by

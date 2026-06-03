@@ -181,13 +181,15 @@ theorem list_8_at_val_eq_slice
   unfold List.slice
   rw [show o + 8 - o = 8 from by omega]
 
-/-- Pure value at cell `k` of `xor_block_into_state`'s closure body. -/
+/-- Pure value at cell `k` of `xor_block_into_state`'s closure body.
+    Under the new spec layout, byte-block index `b` equals state index `k`
+    (no transpose), so the closure is simply `if k < rate/8 then state[k] ^^^
+    block[8*k..8*k+8] else state[k]`. -/
 def xor_block_value_at
     (state : Std.Array Std.U64 25#usize) (block : Slice Std.U8) (rate : Std.Usize)
     (k : Nat) : Std.U64 :=
-  let b := 5 * (k % 5) + k / 5
-  if b < rate.val / 8 then
-    state.val[k]! ^^^ Std.core.num.U64.from_le_bytes (list_8_at block.val (8 * b))
+  if k < rate.val / 8 then
+    state.val[k]! ^^^ Std.core.num.U64.from_le_bytes (list_8_at block.val (8 * k))
   else
     state.val[k]!
 
@@ -245,45 +247,15 @@ theorem xor_block_into_state_closure_call_mut_spec
       (rate, state, block) k
     ⦃ ⇓ r => ⌜ r = (xor_block_value_at state block rate k.val,
                      (rate, state, block)) ⌝ ⦄ := by
-  -- Numeric reductions for the arithmetic prefix:
-  --   x = k / 5, y = k % 5, i1 = 5*y, b = i1 + x, i2 = rate / 8.
-  -- div: uses div_bv_spec (existential form).
-  obtain ⟨x, hx_eq, hx_val, _⟩ :=
-    Std.UScalar.div_bv_spec k (y := (5#usize : Std.Usize)) (by decide)
-  have hx_val' : x.val = k.val / 5 := by rw [hx_val]; rfl
-  obtain ⟨y, hy_eq, hy_val, _⟩ :=
-    Std.WP.spec_imp_exists (Std.UScalar.rem_bv_spec k (y := (5#usize : Std.Usize)) (by decide))
-  have hy_val' : y.val = k.val % 5 := by rw [hy_val]; rfl
-  have h_x_lt : x.val < 5 := by rw [hx_val']; omega
-  have h_y_lt : y.val < 5 := by rw [hy_val']; exact Nat.mod_lt _ (by decide)
-  -- Usize.max ≥ U32.max ≥ 4294967295 ≥ 200 by Usize.bounds_eq.
-  have h_max_200 : 200 ≤ Std.Usize.max := by scalar_tac
-  -- i1 = 5 * y. We use mul_bv_spec via spec_imp_exists.
-  have h_5usize_val : (5#usize : Std.Usize).val = 5 := rfl
+  -- New closure body: `i1 = rate / 8; if k < i1 then ... else state[k]`.
+  -- No transposed-index prologue under the new spec layout.
   have h_8usize_val : (8#usize : Std.Usize).val = 8 := rfl
-  have h_i1_bnd : (5#usize : Std.Usize).val * y.val ≤ Std.UScalar.max .Usize := by
-    rw [h_5usize_val, Std.UScalar.max_USize_eq]
-    have : 5 * y.val < 25 := by omega
-    omega
+  -- i1 = rate / 8.
   obtain ⟨i1, h_i1_eq, h_i1_val_raw, _⟩ :=
-    Std.WP.spec_imp_exists (Std.UScalar.mul_bv_spec (x := (5#usize : Std.Usize)) (y := y) h_i1_bnd)
-  have h_i1_val : i1.val = 5 * y.val := by rw [h_i1_val_raw]; rfl
-  have h_i1_lt : i1.val < 25 := by rw [h_i1_val]; omega
-  -- b = i1 + x.
-  have h_b_bnd : i1.val + x.val ≤ Std.UScalar.max .Usize := by
-    rw [Std.UScalar.max_USize_eq]; omega
-  obtain ⟨b, h_b_eq, h_b_val_raw, _⟩ :=
-    Std.WP.spec_imp_exists (Std.UScalar.add_bv_spec (x := i1) (y := x) h_b_bnd)
-  have h_b_val : b.val = 5 * y.val + x.val := by rw [h_b_val_raw, h_i1_val]
-  have h_b_alt : b.val = 5 * (k.val % 5) + k.val / 5 := by
-    rw [h_b_val, hy_val', hx_val']
-  -- i2 = rate / 8.
-  obtain ⟨i2, h_i2_eq, h_i2_val_raw, _⟩ :=
     Std.UScalar.div_bv_spec rate (y := (8#usize : Std.Usize)) (by decide)
-  have h_i2_val : i2.val = rate.val / 8 := by rw [h_i2_val_raw]; rfl
+  have h_i1_val : i1.val = rate.val / 8 := by rw [h_i1_val_raw]; rfl
   -- Unfold the closure body.
   unfold sponge.xor_block_into_state.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
-  -- Reduce arithmetic prefix using triple_of_ok_xbs after computing the .ok-value of the body.
   -- Bound for `index_usize state k`: succeeds since `k.val < 25`.
   have h_state_idx : (Array.index_usize state k : Result Std.U64) = .ok state.val[k.val]! := by
     have hkl : k.val < state.val.length := by
@@ -295,41 +267,42 @@ theorem xor_block_into_state_closure_call_mut_spec
     obtain ⟨v, hv_eq, hv_val⟩ := Std.WP.spec_imp_exists h_state_spec
     rw [hv_eq, hv_val]
   -- Now distinguish on the branch.
-  by_cases h_branch : b < i2
-  · -- True branch.
-    have h_b_lt_rate8 : b.val < rate.val / 8 := by
-      have h_lt : b.val < i2.val := (Std.UScalar.lt_equiv b i2).mpr h_branch
-      rw [h_i2_val] at h_lt; exact h_lt
-    have h_8b_lt : 8 * b.val + 8 ≤ rate.val := by
+  by_cases h_branch : k < i1
+  · -- True branch: k < rate/8.
+    have h_k_lt_rate8 : k.val < rate.val / 8 := by
+      have h_lt : k.val < i1.val := (Std.UScalar.lt_equiv k i1).mpr h_branch
+      rw [h_i1_val] at h_lt; exact h_lt
+    have h_8k_lt : 8 * k.val + 8 ≤ rate.val := by
       have hrate : rate.val = 8 * (rate.val / 8) + rate.val % 8 :=
         (Nat.div_add_mod _ _).symm
       omega
-    have h_8b_le_max : 8 * b.val + 8 ≤ Std.Usize.max := by omega
-    -- i4 = 8 * b.
-    have h_i4_bnd : (8#usize : Std.Usize).val * b.val ≤ Std.UScalar.max .Usize := by
+    have h_max_200 : 200 ≤ Std.Usize.max := by scalar_tac
+    have h_8k_le_max : 8 * k.val + 8 ≤ Std.Usize.max := by omega
+    -- i3 = 8 * k.
+    have h_i3_bnd : (8#usize : Std.Usize).val * k.val ≤ Std.UScalar.max .Usize := by
       rw [Std.UScalar.max_USize_eq]
-      show 8 * b.val ≤ Std.Usize.max; omega
+      show 8 * k.val ≤ Std.Usize.max; omega
+    obtain ⟨i3, h_i3_eq, h_i3_val_raw, _⟩ :=
+      Std.WP.spec_imp_exists
+        (Std.UScalar.mul_bv_spec (x := (8#usize : Std.Usize)) (y := k) h_i3_bnd)
+    have h_i3_val : i3.val = 8 * k.val := by rw [h_i3_val_raw]; rfl
+    -- i4 = i3 + 8.
+    have h_i4_bnd : i3.val + (8#usize : Std.Usize).val ≤ Std.UScalar.max .Usize := by
+      rw [Std.UScalar.max_USize_eq, h_i3_val]
+      show 8 * k.val + 8 ≤ Std.Usize.max; omega
     obtain ⟨i4, h_i4_eq, h_i4_val_raw, _⟩ :=
       Std.WP.spec_imp_exists
-        (Std.UScalar.mul_bv_spec (x := (8#usize : Std.Usize)) (y := b) h_i4_bnd)
-    have h_i4_val : i4.val = 8 * b.val := by rw [h_i4_val_raw]; rfl
-    -- i5 = i4 + 8.
-    have h_i5_bnd : i4.val + (8#usize : Std.Usize).val ≤ Std.UScalar.max .Usize := by
-      rw [Std.UScalar.max_USize_eq, h_i4_val]
-      show 8 * b.val + 8 ≤ Std.Usize.max; omega
-    obtain ⟨i5, h_i5_eq, h_i5_val_raw, _⟩ :=
-      Std.WP.spec_imp_exists
-        (Std.UScalar.add_bv_spec (x := i4) (y := (8#usize : Std.Usize)) h_i5_bnd)
-    have h_i5_val : i5.val = 8 * b.val + 8 := by rw [h_i5_val_raw, h_i4_val]; rfl
+        (Std.UScalar.add_bv_spec (x := i3) (y := (8#usize : Std.Usize)) h_i4_bnd)
+    have h_i4_val : i4.val = 8 * k.val + 8 := by rw [h_i4_val_raw, h_i3_val]; rfl
     -- Slice index over Range<usize>.
-    have h_range_le : i4.val ≤ i5.val := by omega
-    have h_range_in_blk : i5.val ≤ block.val.length := by rw [h_blk_len, h_i5_val]; omega
+    have h_range_le : i3.val ≤ i4.val := by omega
+    have h_range_in_blk : i4.val ≤ block.val.length := by rw [h_blk_len, h_i4_val]; omega
     have h_slice_triple := core_models_Slice_Insts_index_RangeUsize_spec
-      (T := Std.U8) block ⟨i4, i5⟩ h_range_le h_range_in_blk
+      (T := Std.U8) block ⟨i3, i4⟩ h_range_le h_range_in_blk
     have h_slice_exists := triple_exists_ok_xbs h_slice_triple
     obtain ⟨s1, h_s1_eq, h_s1_val_eq, h_s1_len⟩ := h_slice_exists
     have h_s1_val_len : s1.val.length = (8#usize : Std.Usize).val := by
-      rw [h_s1_len]; show i5.val - i4.val = 8; omega
+      rw [h_s1_len]; show i4.val - i3.val = 8; omega
     -- try_from + unwrap fused.
     have h_try_triple := core_models_array_try_from_slice_spec
       (T := Std.U8) (N := (8#usize : Std.Usize))
@@ -346,41 +319,32 @@ theorem xor_block_into_state_closure_call_mut_spec
         sponge.xor_block_into_state.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
           (rate, state, block) k =
         .ok (xor_block_value_at state block rate k.val, (rate, state, block)) := by
-      -- The unfolded body is `do (i,a,s) := c; ...`.
       show (do
         let (i, a, s) := (rate, state, block);
-        let x ← k / 5#usize
-        let y ← k % 5#usize
-        let i1 ← 5#usize * y
-        let b ← i1 + x
-        let i2 ← i / 8#usize
-        if b < i2 then
-          let i3 ← Array.index_usize a k
-          let i4 ← 8#usize * b
-          let i5 ← i4 + 8#usize
+        let i1 ← i / 8#usize
+        if k < i1 then
+          let i2 ← Array.index_usize a k
+          let i3 ← 8#usize * k
+          let i4 ← i3 + 8#usize
           let s1 ← core_models.Slice.Insts.Core_modelsOpsIndexIndex.index
             (core_models.ops.range.RangeUsize.Insts.Core_modelsSliceIndexSliceIndexSliceSlice
-              Std.U8) s { start := i4, «end» := i5 }
+              Std.U8) s { start := i3, «end» := i4 }
           let r ← core_models.Array.Insts.Core_modelsConvertTryFromShared0SliceTryFromSliceError.try_from
             8#usize core_models.U8.Insts.Core_modelsMarkerCopy s1
           let a1 ← core_models.result.Result.unwrap
             core_models.array.TryFromSliceError.Insts.Core_modelsFmtDebug r
-          let i6 ← core_models.num.U64.from_le_bytes a1
-          let i7 ← Std.lift (i3 ^^^ i6)
-          ok (i7, (i, a, s))
+          let i5 ← core_models.num.U64.from_le_bytes a1
+          let i6 ← Std.lift (i2 ^^^ i5)
+          ok (i6, (i, a, s))
         else
-          let i3 ← Array.index_usize a k
-          ok (i3, (i, a, s))) = _
+          let i2 ← Array.index_usize a k
+          ok (i2, (i, a, s))) = _
       simp only []
-      rw [hx_eq]; simp only [bind_tc_ok]
-      rw [hy_eq]; simp only [bind_tc_ok]
       rw [h_i1_eq]; simp only [bind_tc_ok]
-      rw [h_b_eq]; simp only [bind_tc_ok]
-      rw [h_i2_eq]; simp only [bind_tc_ok]
       rw [if_pos h_branch]
       rw [h_state_idx]; simp only [bind_tc_ok]
+      rw [h_i3_eq]; simp only [bind_tc_ok]
       rw [h_i4_eq]; simp only [bind_tc_ok]
-      rw [h_i5_eq]; simp only [bind_tc_ok]
       rw [h_s1_eq]; simp only [bind_tc_ok]
       rw [h_try_eq]; simp only [bind_tc_ok]
       -- unwrap of .Ok a = .ok a.
@@ -388,9 +352,9 @@ theorem xor_block_into_state_closure_call_mut_spec
           let a1 ← core_models.result.Result.unwrap
             core_models.array.TryFromSliceError.Insts.Core_modelsFmtDebug
             (.Ok (Std.Array.make 8#usize s1.val (by simp [h_s1_val_len])))
-          let i6 ← core_models.num.U64.from_le_bytes a1
-          let i7 ← Std.lift (state.val[k.val]! ^^^ i6)
-          ok (i7, (rate, state, block))) = _
+          let i5 ← core_models.num.U64.from_le_bytes a1
+          let i6 ← Std.lift (state.val[k.val]! ^^^ i5)
+          ok (i6, (rate, state, block))) = _
       unfold core_models.result.Result.unwrap; simp only [bind_tc_ok]
       -- from_le_bytes is `pure (Std.core.num.U64.from_le_bytes a)`.
       have h_fle : (core_models.num.U64.from_le_bytes
@@ -404,87 +368,57 @@ theorem xor_block_into_state_closure_call_mut_spec
       show (Std.lift (state.val[k.val]! ^^^
               Std.core.num.U64.from_le_bytes
                 (Std.Array.make 8#usize s1.val (by simp [h_s1_val_len])))
-              >>= fun i7 => ok (i7, (rate, state, block))) = _
+              >>= fun i6 => ok (i6, (rate, state, block))) = _
       unfold Std.lift; simp only [bind_tc_ok]
       -- Final value match.
       apply congrArg
       refine Prod.mk.injEq .. |>.mpr ⟨?_, rfl⟩
       unfold xor_block_value_at
-      have h_b_val_eq : 5 * (k.val % 5) + k.val / 5 = b.val := h_b_alt.symm
-      rw [show (if 5 * (k.val % 5) + k.val / 5 < rate.val / 8 then
-                state.val[k.val]! ^^^
-                  Std.core.num.U64.from_le_bytes
-                    (list_8_at block.val (8 * (5 * (k.val % 5) + k.val / 5)))
-              else state.val[k.val]!) =
-            (if b.val < rate.val / 8 then
-                state.val[k.val]! ^^^
-                  Std.core.num.U64.from_le_bytes
-                    (list_8_at block.val (8 * b.val))
-              else state.val[k.val]!) from by rw [h_b_val_eq]]
-      rw [if_pos h_b_lt_rate8]
+      rw [if_pos h_k_lt_rate8]
       apply congrArg (state.val[k.val]! ^^^ ·)
       apply U64_from_le_bytes_val_congr
-      show s1.val = (list_8_at block.val (8 * b.val)).val
-      rw [list_8_at_val_eq_slice block.val (8 * b.val) (by rw [h_blk_len]; omega)]
+      show s1.val = (list_8_at block.val (8 * k.val)).val
+      rw [list_8_at_val_eq_slice block.val (8 * k.val) (by rw [h_blk_len]; omega)]
       rw [h_s1_val_eq]
-      show block.val.slice i4.val i5.val = block.val.slice (8 * b.val) (8 * b.val + 8)
-      rw [h_i4_val, h_i5_val]
+      show block.val.slice i3.val i4.val = block.val.slice (8 * k.val) (8 * k.val + 8)
+      rw [h_i3_val, h_i4_val]
     exact triple_of_ok_xbs h_body_eq
   · -- False branch.
-    have h_b_ge : ¬ b.val < i2.val := fun h_lt =>
-      h_branch ((Std.UScalar.lt_equiv b i2).mp h_lt)
-    have h_b_ge_rate8 : ¬ b.val < rate.val / 8 := by rw [← h_i2_val]; exact h_b_ge
+    have h_k_ge : ¬ k.val < i1.val := fun h_lt =>
+      h_branch ((Std.UScalar.lt_equiv k i1).mp h_lt)
+    have h_k_ge_rate8 : ¬ k.val < rate.val / 8 := by rw [← h_i1_val]; exact h_k_ge
     have h_body_eq :
         sponge.xor_block_into_state.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
           (rate, state, block) k =
         .ok (xor_block_value_at state block rate k.val, (rate, state, block)) := by
       show (do
         let (i, a, s) := (rate, state, block);
-        let x ← k / 5#usize
-        let y ← k % 5#usize
-        let i1 ← 5#usize * y
-        let b ← i1 + x
-        let i2 ← i / 8#usize
-        if b < i2 then
-          let i3 ← Array.index_usize a k
-          let i4 ← 8#usize * b
-          let i5 ← i4 + 8#usize
+        let i1 ← i / 8#usize
+        if k < i1 then
+          let i2 ← Array.index_usize a k
+          let i3 ← 8#usize * k
+          let i4 ← i3 + 8#usize
           let s1 ← core_models.Slice.Insts.Core_modelsOpsIndexIndex.index
             (core_models.ops.range.RangeUsize.Insts.Core_modelsSliceIndexSliceIndexSliceSlice
-              Std.U8) s { start := i4, «end» := i5 }
+              Std.U8) s { start := i3, «end» := i4 }
           let r ← core_models.Array.Insts.Core_modelsConvertTryFromShared0SliceTryFromSliceError.try_from
             8#usize core_models.U8.Insts.Core_modelsMarkerCopy s1
           let a1 ← core_models.result.Result.unwrap
             core_models.array.TryFromSliceError.Insts.Core_modelsFmtDebug r
-          let i6 ← core_models.num.U64.from_le_bytes a1
-          let i7 ← Std.lift (i3 ^^^ i6)
-          ok (i7, (i, a, s))
+          let i5 ← core_models.num.U64.from_le_bytes a1
+          let i6 ← Std.lift (i2 ^^^ i5)
+          ok (i6, (i, a, s))
         else
-          let i3 ← Array.index_usize a k
-          ok (i3, (i, a, s))) = _
+          let i2 ← Array.index_usize a k
+          ok (i2, (i, a, s))) = _
       simp only []
-      rw [hx_eq]; simp only [bind_tc_ok]
-      rw [hy_eq]; simp only [bind_tc_ok]
       rw [h_i1_eq]; simp only [bind_tc_ok]
-      rw [h_b_eq]; simp only [bind_tc_ok]
-      rw [h_i2_eq]; simp only [bind_tc_ok]
       rw [if_neg h_branch]
       rw [h_state_idx]; simp only [bind_tc_ok]
       apply congrArg
       refine Prod.mk.injEq .. |>.mpr ⟨?_, rfl⟩
       unfold xor_block_value_at
-      have h_b_val_eq : 5 * (k.val % 5) + k.val / 5 = b.val := h_b_alt.symm
-      rw [show (if 5 * (k.val % 5) + k.val / 5 < rate.val / 8 then
-                state.val[k.val]! ^^^
-                  Std.core.num.U64.from_le_bytes
-                    (list_8_at block.val (8 * (5 * (k.val % 5) + k.val / 5)))
-              else state.val[k.val]!) =
-            (if b.val < rate.val / 8 then
-                state.val[k.val]! ^^^
-                  Std.core.num.U64.from_le_bytes
-                    (list_8_at block.val (8 * b.val))
-              else state.val[k.val]!) from by rw [h_b_val_eq]]
-      rw [if_neg h_b_ge_rate8]
+      rw [if_neg h_k_ge_rate8]
     exact triple_of_ok_xbs h_body_eq
 
 /-! ## Direct `@[spec]` for `sponge.xor_block_into_state`.

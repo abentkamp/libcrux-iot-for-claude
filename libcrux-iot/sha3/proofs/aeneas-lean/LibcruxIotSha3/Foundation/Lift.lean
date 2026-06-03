@@ -9,9 +9,11 @@
   These definitions reconstruct the standard 64-bit lane and lift the
   full 25-lane state to the spec's `Array Std.U64 25#usize`.
 
-  After M1, the impl and spec agree on the lane index convention
-  (`A[x, y]` at flat index `5*x + y`), so `lift` is identity on indices —
-  no permutation is needed.
+  The impl stores `A[x, y]` at `st[5*x + y]`. The spec stores `A[x, y]`
+  at `state[5*y + x]` (FIPS 202 §3.1.2). The bridge therefore transposes
+  flat indices via `transpose_perm`, which `lift` and `lift_perm` bake
+  in so callers see the canonical "identity" relationship between impl
+  storage and the spec view.
 
   `spread_to_even` and `lift_lane_bv` are marked `@[local irreducible]`
   *in downstream files* (e.g. `ThetaLift.lean`) after this module's
@@ -64,11 +66,20 @@ def lift_lane_bv (z0 z1 : BitVec 32) : BitVec 64 :=
 def lift_lane (l : libcrux_iot_sha3.lane.Lane2U32) : Std.U64 :=
   ⟨lift_lane_bv (l.val[0]!).bv (l.val[1]!).bv⟩
 
-/-- Lift the full 25-lane Keccak state from interleaved to standard form.
+/-- Spec-index ↔ impl-index transpose: `transpose_perm (5*y + x) = 5*x + y`.
 
-    After M1, this is identity-on-indices: `(lift s).val[i]! = lift_lane (s.st.val[i]!)`. -/
+    The impl stores `A[x, y]` at impl index `5*x + y`; the spec stores it at
+    spec index `5*y + x`. So spec position `i = 5*y + x` corresponds to impl
+    position `5*x + y = transpose_perm i`. Involution: `transpose_perm ∘
+    transpose_perm = id`. -/
+def transpose_perm (i : Fin 25) : Fin 25 :=
+  ⟨5 * (i.val % 5) + i.val / 5, by omega⟩
+
+/-- Lift the full 25-lane Keccak state from interleaved to standard form,
+    routing through the spec↔impl transpose:
+    `(lift s).val[i]! = lift_lane (s.st.val[transpose_perm i]!)`. -/
 def lift (s : libcrux_iot_sha3.state.KeccakState) : Array Std.U64 25#usize :=
-  ⟨List.ofFn (fun i : Fin 25 => lift_lane (s.st.val[i.val]!)),
+  ⟨List.ofFn (fun i : Fin 25 => lift_lane (s.st.val[(transpose_perm i).val]!)),
     by simp⟩
 
 /-! ## 32-bit rotation abbreviation used in the interleaved implementation -/
@@ -167,16 +178,18 @@ def lift_lane_maybe_swap (l : libcrux_iot_sha3.lane.Lane2U32) (sw : Bool) :
   if sw then ⟨lift_lane_bv (l.val[1]!).bv (l.val[0]!).bv⟩
   else lift_lane l
 
-/-- Lift a permuted state: applies permutation `p` to lane indices before
-    lifting each lane. `sw : Fin 25 → Bool` selects per-impl-lane half-swap
-    (pass `fun _ => false` for the no-swap case). -/
+/-- Lift a permuted state: composes `p` after the spec↔impl transpose, then
+    reads the impl state at the resulting impl index (optionally swapping
+    halves per `sw`). `p` is a permutation of impl indices. -/
 def lift_perm (s : libcrux_iot_sha3.state.KeccakState) (p : Fin 25 → Fin 25)
     (sw : Fin 25 → Bool) :
     Array Std.U64 25#usize :=
-  ⟨List.ofFn (fun i : Fin 25 => lift_lane_maybe_swap (s.st.val[(p i).val]!) (sw (p i))),
+  ⟨List.ofFn (fun i : Fin 25 =>
+      lift_lane_maybe_swap (s.st.val[(p (transpose_perm i)).val]!)
+                           (sw (p (transpose_perm i)))),
     by simp⟩
 
-/-- `lift_perm s id (fun _ => false) = lift s`. -/
+/-- `lift_perm s id (fun _ => false) = lift s`. Both bake in the transpose. -/
 theorem lift_perm_id (s : libcrux_iot_sha3.state.KeccakState) :
     lift_perm s id (fun _ => false) = lift s := by
   unfold lift_perm lift lift_lane_maybe_swap
@@ -188,11 +201,14 @@ These four lemmas appear textually-identical across all three
 `ThetaLiftRound{1,2,3}` files; hoisted here so each round file
 just references the shared copy. -/
 
-/-- `lift_perm` lane indexing: read the k-th lane of a permuted state. -/
+/-- `lift_perm` lane indexing: read the k-th lane of a permuted state.
+    Note: under the new layout, the permutation `p` is composed with
+    `transpose_perm`. -/
 theorem lift_perm_getElem (s : libcrux_iot_sha3.state.KeccakState)
     (p : Fin 25 → Fin 25) (sw : Fin 25 → Bool) (k : Fin 25) :
     (lift_perm s p sw).val[k.val]! =
-      lift_lane_maybe_swap (s.st.val[(p k).val]!) (sw (p k)) := by
+      lift_lane_maybe_swap (s.st.val[(p (transpose_perm k)).val]!)
+                           (sw (p (transpose_perm k))) := by
   unfold lift_perm
   change (List.ofFn _)[k.val]! = _
   rw [getElem!_pos _ k.val (by simpa using k.isLt), List.getElem_ofFn]
@@ -201,7 +217,8 @@ theorem lift_perm_getElem (s : libcrux_iot_sha3.state.KeccakState)
 theorem lift_perm_getElem_bv_aux (s : libcrux_iot_sha3.state.KeccakState)
     (p : Fin 25 → Fin 25) (sw : Fin 25 → Bool) (k : Fin 25) :
     ((↑(lift_perm s p sw) : List Std.U64)[(k.val : Nat)]!).bv =
-      (lift_lane_maybe_swap (s.st.val[(p k).val]!) (sw (p k))).bv := by
+      (lift_lane_maybe_swap (s.st.val[(p (transpose_perm k)).val]!)
+                            (sw (p (transpose_perm k)))).bv := by
   show ((lift_perm s p sw).val[k.val]!).bv = _
   rw [lift_perm_getElem]
 

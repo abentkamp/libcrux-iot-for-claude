@@ -480,8 +480,7 @@ theorem keccak.keccak_keccak_spec_blocks_zero
   rw [hsb_def]
   rw [h_k_div]
   show r_out.val[k]! = ⟨(BitVec.toLEBytes
-      ((Foundation.lift s2).val[5 * (((k - 0 * RATE.val) / 8) % 5)
-        + ((k - 0 * RATE.val) / 8) / 5]!).bv)[(k - 0 * RATE.val) % 8]!⟩
+      ((Foundation.lift s2).val[(k - 0 * RATE.val) / 8]!).bv)[(k - 0 * RATE.val) % 8]!⟩
   rw [show k - 0 * RATE.val = k from by omega]
   exact h_r_out_bytes k hk
 

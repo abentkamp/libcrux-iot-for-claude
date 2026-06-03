@@ -72,32 +72,33 @@ applies to files that import `RoundEquiv`. Adding it to `PrcLift.lean`
 caused `prc_lift_spec`'s mvcgen pass to drift past the 128M heartbeat
 cap (HEAD baseline was just under). -/
 
-/-- Pure semantics of `keccak_f.theta_unrolled`: column XOR (c_x), then
-    d_x = c_{x-1} ^ rot64(c_{x+1}, 1), then state[k] ^ d_{k/5}.
-    Mirrors `HacspecSha3/.../Funs.lean:546`. -/
+/-- Pure semantics of `keccak_f.theta_unrolled` (new `5*y + x` layout):
+    column XOR `c_x = ⊕_y state[5*y + x]`, then
+    `d_x = c_{x-1} ^ rot64(c_{x+1}, 1)`, then `state[k] ^ d_{k%5}`.
+    Mirrors the new `HacspecSha3/.../Funs.lean` `theta_unrolled`. -/
 def theta_unrolled_applied (state : Std.Array Std.U64 25#usize) :
     Std.Array Std.U64 25#usize :=
-  let c0 := state.val[0]! ^^^ state.val[1]! ^^^ state.val[2]! ^^^ state.val[3]! ^^^ state.val[4]!
-  let c1 := state.val[5]! ^^^ state.val[6]! ^^^ state.val[7]! ^^^ state.val[8]! ^^^ state.val[9]!
-  let c2 := state.val[10]! ^^^ state.val[11]! ^^^ state.val[12]! ^^^ state.val[13]! ^^^ state.val[14]!
-  let c3 := state.val[15]! ^^^ state.val[16]! ^^^ state.val[17]! ^^^ state.val[18]! ^^^ state.val[19]!
-  let c4 := state.val[20]! ^^^ state.val[21]! ^^^ state.val[22]! ^^^ state.val[23]! ^^^ state.val[24]!
+  let c0 := state.val[0]!  ^^^ state.val[5]!  ^^^ state.val[10]! ^^^ state.val[15]! ^^^ state.val[20]!
+  let c1 := state.val[1]!  ^^^ state.val[6]!  ^^^ state.val[11]! ^^^ state.val[16]! ^^^ state.val[21]!
+  let c2 := state.val[2]!  ^^^ state.val[7]!  ^^^ state.val[12]! ^^^ state.val[17]! ^^^ state.val[22]!
+  let c3 := state.val[3]!  ^^^ state.val[8]!  ^^^ state.val[13]! ^^^ state.val[18]! ^^^ state.val[23]!
+  let c4 := state.val[4]!  ^^^ state.val[9]!  ^^^ state.val[14]! ^^^ state.val[19]! ^^^ state.val[24]!
   let d0 : Std.U64 := c4 ^^^ ⟨c1.bv.rotateLeft 1⟩
   let d1 : Std.U64 := c0 ^^^ ⟨c2.bv.rotateLeft 1⟩
   let d2 : Std.U64 := c1 ^^^ ⟨c3.bv.rotateLeft 1⟩
   let d3 : Std.U64 := c2 ^^^ ⟨c4.bv.rotateLeft 1⟩
   let d4 : Std.U64 := c3 ^^^ ⟨c0.bv.rotateLeft 1⟩
   Std.Array.make 25#usize [
-    state.val[0]! ^^^ d0, state.val[1]! ^^^ d0, state.val[2]! ^^^ d0,
-    state.val[3]! ^^^ d0, state.val[4]! ^^^ d0,
-    state.val[5]! ^^^ d1, state.val[6]! ^^^ d1, state.val[7]! ^^^ d1,
-    state.val[8]! ^^^ d1, state.val[9]! ^^^ d1,
-    state.val[10]! ^^^ d2, state.val[11]! ^^^ d2, state.val[12]! ^^^ d2,
-    state.val[13]! ^^^ d2, state.val[14]! ^^^ d2,
-    state.val[15]! ^^^ d3, state.val[16]! ^^^ d3, state.val[17]! ^^^ d3,
-    state.val[18]! ^^^ d3, state.val[19]! ^^^ d3,
-    state.val[20]! ^^^ d4, state.val[21]! ^^^ d4, state.val[22]! ^^^ d4,
-    state.val[23]! ^^^ d4, state.val[24]! ^^^ d4
+    state.val[0]!  ^^^ d0, state.val[1]!  ^^^ d1, state.val[2]!  ^^^ d2,
+    state.val[3]!  ^^^ d3, state.val[4]!  ^^^ d4,
+    state.val[5]!  ^^^ d0, state.val[6]!  ^^^ d1, state.val[7]!  ^^^ d2,
+    state.val[8]!  ^^^ d3, state.val[9]!  ^^^ d4,
+    state.val[10]! ^^^ d0, state.val[11]! ^^^ d1, state.val[12]! ^^^ d2,
+    state.val[13]! ^^^ d3, state.val[14]! ^^^ d4,
+    state.val[15]! ^^^ d0, state.val[16]! ^^^ d1, state.val[17]! ^^^ d2,
+    state.val[18]! ^^^ d3, state.val[19]! ^^^ d4,
+    state.val[20]! ^^^ d0, state.val[21]! ^^^ d1, state.val[22]! ^^^ d2,
+    state.val[23]! ^^^ d3, state.val[24]! ^^^ d4
   ]
 
 set_option maxHeartbeats 16000000 in

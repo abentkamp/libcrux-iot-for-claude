@@ -664,21 +664,20 @@ Each hacspec closure used inside `theta`/`rho`/`pi`/`chi` has the shape:
 We state the per-cell purity as a `@[spec]` Triple so `hax_mvcgen` chains
 through it when applied to a `createi`. -/
 
-/-- `f`-side of theta's first closure (computes column XORs). -/
+/-- `f`-side of theta's first closure (computes column XORs).
+    Under the new spec layout, `C[k] = ⊕_y state[5*y + k]`. -/
 private def theta_closure_c_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
     Std.U64 :=
-  state.val[5*k]! ^^^ state.val[5*k+1]! ^^^ state.val[5*k+2]! ^^^
-    state.val[5*k+3]! ^^^ state.val[5*k+4]!
+  state.val[k]! ^^^ state.val[5+k]! ^^^ state.val[10+k]! ^^^
+    state.val[15+k]! ^^^ state.val[20+k]!
 
-/-- `@[spec]` for `keccak_f.get`: with bound `5*x + y < 25`, returns
-    `state.val[5*x + y]!`. Chains through `5#usize * x`, `i + y`,
-    `Array.index_usize` via Aeneas's `@[step]` arithmetic specs. -/
+/-- `@[spec]` for `keccak_f.get` (new layout): `get state x y = state[5*y + x]`. -/
 @[spec]
 private theorem keccak_f_get_spec
     (state : Std.Array Std.U64 25#usize) (x y : Std.Usize)
-    (hbound : 5 * x.val + y.val < 25) :
+    (hbound : 5 * y.val + x.val < 25) :
     ⦃ ⌜ True ⌝ ⦄ keccak_f.get state x y
-    ⦃ ⇓ r => ⌜ r = state.val[5*x.val + y.val]! ⌝ ⦄ := by
+    ⦃ ⇓ r => ⌜ r = state.val[5*y.val + x.val]! ⌝ ⦄ := by
   unfold keccak_f.get
   hax_mvcgen
   all_goals scalar_tac
@@ -721,12 +720,12 @@ private theorem theta_closure_1_call_mut_spec
                    | (congr 1; apply Std.U64.bv_eq_imp_eq;
                       simp_all [Std.UScalar.bv_xor]))
 
-/-- `f`-side of theta's third closure (25 final state values:
-    `state[k] ^^^ d[k/5]`). -/
+/-- `f`-side of theta's third closure (25 final state values).
+    Under the new layout `k = 5*y + x`, so `x = k % 5` and `D[x] = d[k%5]`. -/
 private def theta_closure_2_at
     (sd : Std.Array Std.U64 25#usize × Std.Array Std.U64 5#usize) (k : Nat) :
     Std.U64 :=
-  sd.1.val[k]! ^^^ sd.2.val[k / 5]!
+  sd.1.val[k]! ^^^ sd.2.val[k % 5]!
 
 /-- Purity of theta's third closure (25 final values). -/
 @[spec]
@@ -766,10 +765,12 @@ private theorem rho_closure_call_mut_spec
                    | (congr 1; apply Std.U64.bv_eq_imp_eq;
                       simp_all [Std.UScalar.bv_xor]))
 
-/-- `f`-side of `pi`'s closure (lane permutation). -/
+/-- `f`-side of `pi`'s closure (lane permutation). Under the new layout
+    `A[x,y]` is at position `5*y + x`, so π's output at `k = 5*y + x`
+    reads `state[5*x + (x+3y)%5]`. -/
 private def pi_closure_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
     Std.U64 :=
-  state.val[5 * (((k / 5) + 3 * (k % 5)) % 5) + (k / 5)]!
+  state.val[5 * (k % 5) + ((k % 5) + 3 * (k / 5)) % 5]!
 
 /-- Purity of `pi`'s closure. -/
 @[spec]
@@ -787,15 +788,16 @@ private theorem pi_closure_call_mut_spec
                    | (congr 1; apply Std.U64.bv_eq_imp_eq;
                       simp_all [Std.UScalar.bv_xor]))
 
-/-- `f`-side of `chi`'s closure: `state[5x+y] ^^^ ((¬state[5*((x+1)%5)+y]) &&&
-    state[5*((x+2)%5)+y])`, where `x = k/5`, `y = k%5`. -/
+/-- `f`-side of `chi`'s closure (new layout `A[x,y]` at `5*y + x`):
+    `state[5y+x] ^^^ ((¬state[5y+(x+1)%5]) &&& state[5y+(x+2)%5])`,
+    where `y = k/5`, `x = k%5`. -/
 private def chi_closure_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
     Std.U64 :=
-  let x := k / 5
-  let y := k % 5
-  state.val[5*x + y]! ^^^
-    ⟨(~~~ (state.val[5*((x + 1) % 5) + y]!).bv) &&&
-       (state.val[5*((x + 2) % 5) + y]!).bv⟩
+  let y := k / 5
+  let x := k % 5
+  state.val[5*y + x]! ^^^
+    ⟨(~~~ (state.val[5*y + (x + 1) % 5]!).bv) &&&
+       (state.val[5*y + (x + 2) % 5]!).bv⟩
 
 /-- Purity of `chi`'s closure. -/
 @[spec]
@@ -960,20 +962,31 @@ theorem theta_eq_theta_unrolled (state : Std.Array Std.U64 25#usize) :
            show (4 + 4) % 5 = 3 from rfl, show (4 + 1) % 5 = 0 from rfl] at hd0 hd1 hd2 hd3 hd4
          -- Build per-cell equalities for r_a.val[i]! using ha then substituting hd
          close_array25_inner theta_closure_2_at with [
-           show (0:Nat)/5 = 0 from rfl, show (1:Nat)/5 = 0 from rfl,
-           show (2:Nat)/5 = 0 from rfl, show (3:Nat)/5 = 0 from rfl,
-           show (4:Nat)/5 = 0 from rfl,
-           show (5:Nat)/5 = 1 from rfl, show (6:Nat)/5 = 1 from rfl,
-           show (7:Nat)/5 = 1 from rfl, show (8:Nat)/5 = 1 from rfl,
-           show (9:Nat)/5 = 1 from rfl,
-           show (10:Nat)/5 = 2 from rfl, show (11:Nat)/5 = 2 from rfl,
-           show (12:Nat)/5 = 2 from rfl, show (13:Nat)/5 = 2 from rfl,
-           show (14:Nat)/5 = 2 from rfl,
-           show (15:Nat)/5 = 3 from rfl, show (16:Nat)/5 = 3 from rfl,
-           show (17:Nat)/5 = 3 from rfl, show (18:Nat)/5 = 3 from rfl,
-           show (19:Nat)/5 = 3 from rfl,
-           show (20:Nat)/5 = 4 from rfl, show (21:Nat)/5 = 4 from rfl,
-           show (22:Nat)/5 = 4 from rfl, show (23:Nat)/5 = 4 from rfl,
+           show (0:Nat) % 5 = 0 from rfl,
+           show (1:Nat) % 5 = 1 from rfl,
+           show (2:Nat) % 5 = 2 from rfl,
+           show (3:Nat) % 5 = 3 from rfl,
+           show (4:Nat) % 5 = 4 from rfl,
+           show (5:Nat) % 5 = 0 from rfl,
+           show (6:Nat) % 5 = 1 from rfl,
+           show (7:Nat) % 5 = 2 from rfl,
+           show (8:Nat) % 5 = 3 from rfl,
+           show (9:Nat) % 5 = 4 from rfl,
+           show (10:Nat) % 5 = 0 from rfl,
+           show (11:Nat) % 5 = 1 from rfl,
+           show (12:Nat) % 5 = 2 from rfl,
+           show (13:Nat) % 5 = 3 from rfl,
+           show (14:Nat) % 5 = 4 from rfl,
+           show (15:Nat) % 5 = 0 from rfl,
+           show (16:Nat) % 5 = 1 from rfl,
+           show (17:Nat) % 5 = 2 from rfl,
+           show (18:Nat) % 5 = 3 from rfl,
+           show (19:Nat) % 5 = 4 from rfl,
+           show (20:Nat) % 5 = 0 from rfl,
+           show (21:Nat) % 5 = 1 from rfl,
+           show (22:Nat) % 5 = 2 from rfl,
+           show (23:Nat) % 5 = 3 from rfl,
+           show (24:Nat) % 5 = 4 from rfl,
            hd0, hd1, hd2, hd3, hd4]
            then skip)
   have h2 : keccak_f.theta_unrolled state = .ok (theta_unrolled_applied state) :=
@@ -993,29 +1006,29 @@ theorem rho_eq_rho_unrolled (state : Std.Array Std.U64 25#usize) :
       | scalar_tac
       | close_array25 rho_applied, rho_closure_at with [rot64,
           show (keccak_f.RHO_OFFSETS.val[0]!).val = 0 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[1]!).val = 36 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[2]!).val = 3 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[3]!).val = 41 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[4]!).val = 18 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[5]!).val = 1 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[1]!).val = 1 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[2]!).val = 62 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[3]!).val = 28 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[4]!).val = 27 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[5]!).val = 36 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
           show (keccak_f.RHO_OFFSETS.val[6]!).val = 44 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[7]!).val = 10 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[8]!).val = 45 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[9]!).val = 2 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[10]!).val = 62 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[11]!).val = 6 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[7]!).val = 6 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[8]!).val = 55 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[9]!).val = 20 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[10]!).val = 3 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[11]!).val = 10 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
           show (keccak_f.RHO_OFFSETS.val[12]!).val = 43 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[13]!).val = 15 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[14]!).val = 61 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[15]!).val = 28 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[16]!).val = 55 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[17]!).val = 25 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[13]!).val = 25 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[14]!).val = 39 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[15]!).val = 41 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[16]!).val = 45 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[17]!).val = 15 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
           show (keccak_f.RHO_OFFSETS.val[18]!).val = 21 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[19]!).val = 56 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[20]!).val = 27 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[21]!).val = 20 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[22]!).val = 39 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
-          show (keccak_f.RHO_OFFSETS.val[23]!).val = 8 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[19]!).val = 8 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[20]!).val = 18 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[21]!).val = 2 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[22]!).val = 61 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
+          show (keccak_f.RHO_OFFSETS.val[23]!).val = 56 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make],
           show (keccak_f.RHO_OFFSETS.val[24]!).val = 14 from by simp [keccak_f.RHO_OFFSETS, Std.Array.make]]
         then skip
   have h2 : keccak_f.rho_unrolled state = .ok (rho_applied state) :=

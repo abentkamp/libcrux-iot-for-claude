@@ -71,7 +71,7 @@ theorem keccak.squeeze_first_block_spec
         r.val.length = out.val.length
         ∧ ∀ k : Nat, k < RATE.val →
             r.val[k]! = ⟨(BitVec.toLEBytes
-              ((Foundation.lift s).val[5 * ((k / 8) % 5) + (k / 8) / 5]!).bv)[k % 8]!⟩
+              ((Foundation.lift s).val[k / 8]!).bv)[k % 8]!⟩
     ⌝ ⦄ := by
   -- Delegate to `store_block_spec`.
   obtain ⟨r, h_r_eq, h_r_len, h_r_bytes⟩ :=
@@ -93,7 +93,7 @@ theorem keccak.squeeze_first_block_spec
     - `r.2.val.length = out.val.length`.
     - There exists `s_spec` with `keccak_f.keccak_f (lift s) = .ok s_spec`,
       `s_spec = lift r.1`, and for every `k < RATE.val`,
-      `r.2.val[k]! = (s_spec.val[5*((k/8)%5)+(k/8)/5]!).bv.toLEBytes[k%8]!`. -/
+      `r.2.val[k]! = (s_spec.val[k/8]!).bv.toLEBytes[k%8]!`. -/
 @[spec]
 theorem keccak.squeeze_next_block_spec
     (RATE : Std.Usize) (s : state.KeccakState) (out : Slice Std.U8)
@@ -112,7 +112,7 @@ theorem keccak.squeeze_next_block_spec
             ∧ s_spec = Foundation.lift r.1
             ∧ ∀ k : Nat, k < RATE.val →
                 r.2.val[k]! = ⟨(BitVec.toLEBytes
-                  (s_spec.val[5 * ((k / 8) % 5) + (k / 8) / 5]!).bv)[k % 8]!⟩
+                  (s_spec.val[k / 8]!).bv)[k % 8]!⟩
     ⌝ ⦄ := by
   -- Step 1: discharge `keccakf1600` via the Opaque seal.
   obtain ⟨s1, h_s1_eq, h_s1_spec, h_s1_i⟩ :=
@@ -157,7 +157,7 @@ theorem state.KeccakState.store_block_full_spec
         r.val.length = 200
         ∧ ∀ k : Nat, k < RATE.val →
             r.val[k]! = ⟨(BitVec.toLEBytes
-              ((Foundation.lift s).val[5 * ((k / 8) % 5) + (k / 8) / 5]!).bv)[k % 8]!⟩
+              ((Foundation.lift s).val[k / 8]!).bv)[k % 8]!⟩
     ⌝ ⦄ := by
   -- `Array.to_slice out` has `.val = out.val` (length 200).
   have h_to_slice_val : (Std.Array.to_slice out).val = out.val := rfl
@@ -187,7 +187,7 @@ theorem state.KeccakState.store_block_full_spec
     rw [hr_val_eq]; exact h_s_inner_len_200
   have hr_bytes : ∀ k : Nat, k < RATE.val →
       r_arr.val[k]! = ⟨(BitVec.toLEBytes
-        ((Foundation.lift s).val[5 * ((k / 8) % 5) + (k / 8) / 5]!).bv)[k % 8]!⟩ := by
+        ((Foundation.lift s).val[k / 8]!).bv)[k % 8]!⟩ := by
     intro k hk
     rw [hr_val_eq]
     exact h_s_inner_bytes k hk
@@ -295,7 +295,7 @@ theorem keccak.squeeze_last_spec
             keccak_f.keccak_f (Foundation.lift s) = .ok s_spec
             ∧ ∀ k : Nat, k < out.val.length →
                 r.val[k]! = ⟨(BitVec.toLEBytes
-                  (s_spec.val[5 * ((k / 8) % 5) + (k / 8) / 5]!).bv)[k % 8]!⟩
+                  (s_spec.val[k / 8]!).bv)[k % 8]!⟩
     ⌝ ⦄ := by
   -- Step 1: discharge `keccakf1600` via the Opaque seal.
   obtain ⟨s1, h_s1_eq, h_s1_spec, h_s1_i⟩ :=
@@ -402,7 +402,7 @@ theorem keccak.squeeze_first_and_last_spec
         r.val.length = out.val.length
         ∧ ∀ k : Nat, k < out.val.length →
             r.val[k]! = ⟨(BitVec.toLEBytes
-              ((Foundation.lift s).val[5 * ((k / 8) % 5) + (k / 8) / 5]!).bv)[k % 8]!⟩
+              ((Foundation.lift s).val[k / 8]!).bv)[k % 8]!⟩
     ⌝ ⦄ := by
   -- The 200-byte buffer (all zeros).
   set buf : Std.Array Std.U8 200#usize := Std.Array.repeat 200#usize 0#u8 with hbuf

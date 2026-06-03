@@ -60,8 +60,8 @@ theorem keccakf1600_equiv_via_bit (s : state.KeccakState)
     intro a b hab
     unfold Foundation.lift
     apply Subtype.ext
-    show List.ofFn (fun i : Fin 25 => lift_lane (a.st.val[i.val]!))
-       = List.ofFn (fun i : Fin 25 => lift_lane (b.st.val[i.val]!))
+    show List.ofFn (fun i : Fin 25 => lift_lane (a.st.val[(transpose_perm i).val]!))
+       = List.ofFn (fun i : Fin 25 => lift_lane (b.st.val[(transpose_perm i).val]!))
     rw [hab]
   have h_r_eq_iter_st :
       r.st = (KState.toAeneas

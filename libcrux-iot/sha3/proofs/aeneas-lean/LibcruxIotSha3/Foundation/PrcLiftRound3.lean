@@ -320,8 +320,9 @@ The mapping `K → L_K, sw_K` is fixed: see the table in `ThetaLiftRound3.lean`.
 private theorem lta_perm_getElem_3 (s : state.KeccakState)
     (p : Fin 25 → Fin 25) (sw : Fin 25 → Bool) (k : Fin 25) :
     (lift_theta_applied_perm s p sw).val[k.val]! =
-      lift_lane_maybe_swap (s.st.val[(p k).val]!) (sw (p k)) ^^^
-        lift_lane (s.d.val[k.val / 5]!) := by
+      lift_lane_maybe_swap (s.st.val[(p (transpose_perm k)).val]!)
+                           (sw (p (transpose_perm k))) ^^^
+        lift_lane (s.d.val[k.val % 5]!) := by
   unfold lift_theta_applied_perm
   change (List.ofFn _)[k.val]! = _
   rw [getElem!_pos _ k.val (by simpa using k.isLt), List.getElem_ofFn]
@@ -331,69 +332,63 @@ theorem lift_theta_applied_perm_bv_0_3 (s : state.KeccakState) :
       lift_lane_bv ((s.st.val[0]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
                    ((s.st.val[0]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨0, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨0, by decide⟩).val = 0 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨0, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨0, by decide⟩)).val = 0 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨0, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_1_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[1]!).bv =
-      lift_lane_bv ((s.st.val[3]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
-                   ((s.st.val[3]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[7]!).val[1]! ^^^ (s.d.val[1]!).val[0]!).bv
+                   ((s.st.val[7]!).val[0]! ^^^ (s.d.val[1]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨1, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨1, by decide⟩).val = 3 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨1, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨1, by decide⟩)).val = 7 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨1, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_2_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[2]!).bv =
-      lift_lane_bv ((s.st.val[1]!).val[1]! ^^^ (s.d.val[0]!).val[0]!).bv
-                   ((s.st.val[1]!).val[0]! ^^^ (s.d.val[0]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[14]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
+                   ((s.st.val[14]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨2, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨2, by decide⟩).val = 1 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨2, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨2, by decide⟩)).val = 14 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨2, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_3_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[3]!).bv =
-      lift_lane_bv ((s.st.val[4]!).val[1]! ^^^ (s.d.val[0]!).val[0]!).bv
-                   ((s.st.val[4]!).val[0]! ^^^ (s.d.val[0]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[16]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
+                   ((s.st.val[16]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨3, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨3, by decide⟩).val = 4 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨3, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨3, by decide⟩)).val = 16 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨3, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_4_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[4]!).bv =
-      lift_lane_bv ((s.st.val[2]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
-                   ((s.st.val[2]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[23]!).val[1]! ^^^ (s.d.val[4]!).val[0]!).bv
+                   ((s.st.val[23]!).val[0]! ^^^ (s.d.val[4]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨4, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨4, by decide⟩).val = 2 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨4, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨4, by decide⟩)).val = 23 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨4, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_5_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[5]!).bv =
-      lift_lane_bv ((s.st.val[7]!).val[1]! ^^^ (s.d.val[1]!).val[0]!).bv
-                   ((s.st.val[7]!).val[0]! ^^^ (s.d.val[1]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[3]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
+                   ((s.st.val[3]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨5, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨5, by decide⟩).val = 7 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨5, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨5, by decide⟩)).val = 3 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨5, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
@@ -403,69 +398,63 @@ theorem lift_theta_applied_perm_bv_6_3 (s : state.KeccakState) :
       lift_lane_bv ((s.st.val[5]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
                    ((s.st.val[5]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨6, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨6, by decide⟩).val = 5 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨6, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨6, by decide⟩)).val = 5 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨6, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_7_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[7]!).bv =
-      lift_lane_bv ((s.st.val[8]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
-                   ((s.st.val[8]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[12]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
+                   ((s.st.val[12]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨7, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨7, by decide⟩).val = 8 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨7, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨7, by decide⟩)).val = 12 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨7, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_8_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[8]!).bv =
-      lift_lane_bv ((s.st.val[6]!).val[1]! ^^^ (s.d.val[1]!).val[0]!).bv
-                   ((s.st.val[6]!).val[0]! ^^^ (s.d.val[1]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[19]!).val[1]! ^^^ (s.d.val[3]!).val[0]!).bv
+                   ((s.st.val[19]!).val[0]! ^^^ (s.d.val[3]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨8, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨8, by decide⟩).val = 6 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨8, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨8, by decide⟩)).val = 19 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨8, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_9_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[9]!).bv =
-      lift_lane_bv ((s.st.val[9]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
-                   ((s.st.val[9]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[21]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
+                   ((s.st.val[21]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨9, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨9, by decide⟩).val = 9 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨9, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨9, by decide⟩)).val = 21 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨9, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_10_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[10]!).bv =
-      lift_lane_bv ((s.st.val[14]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
-                   ((s.st.val[14]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[1]!).val[1]! ^^^ (s.d.val[0]!).val[0]!).bv
+                   ((s.st.val[1]!).val[0]! ^^^ (s.d.val[0]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨10, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨10, by decide⟩).val = 14 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨10, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨10, by decide⟩)).val = 1 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨10, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_11_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[11]!).bv =
-      lift_lane_bv ((s.st.val[12]!).val[0]! ^^^ (s.d.val[2]!).val[0]!).bv
-                   ((s.st.val[12]!).val[1]! ^^^ (s.d.val[2]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[8]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
+                   ((s.st.val[8]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨11, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨11, by decide⟩).val = 12 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨11, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨11, by decide⟩)).val = 8 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨11, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
@@ -475,69 +464,63 @@ theorem lift_theta_applied_perm_bv_12_3 (s : state.KeccakState) :
       lift_lane_bv ((s.st.val[10]!).val[1]! ^^^ (s.d.val[2]!).val[0]!).bv
                    ((s.st.val[10]!).val[0]! ^^^ (s.d.val[2]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨12, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨12, by decide⟩).val = 10 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨12, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨12, by decide⟩)).val = 10 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨12, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_13_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[13]!).bv =
-      lift_lane_bv ((s.st.val[13]!).val[1]! ^^^ (s.d.val[2]!).val[0]!).bv
-                   ((s.st.val[13]!).val[0]! ^^^ (s.d.val[2]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[17]!).val[1]! ^^^ (s.d.val[3]!).val[0]!).bv
+                   ((s.st.val[17]!).val[0]! ^^^ (s.d.val[3]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨13, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨13, by decide⟩).val = 13 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨13, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨13, by decide⟩)).val = 17 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨13, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_14_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[14]!).bv =
-      lift_lane_bv ((s.st.val[11]!).val[1]! ^^^ (s.d.val[2]!).val[0]!).bv
-                   ((s.st.val[11]!).val[0]! ^^^ (s.d.val[2]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[24]!).val[1]! ^^^ (s.d.val[4]!).val[0]!).bv
+                   ((s.st.val[24]!).val[0]! ^^^ (s.d.val[4]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨14, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨14, by decide⟩).val = 11 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨14, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨14, by decide⟩)).val = 24 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨14, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_15_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[15]!).bv =
-      lift_lane_bv ((s.st.val[16]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
-                   ((s.st.val[16]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[4]!).val[1]! ^^^ (s.d.val[0]!).val[0]!).bv
+                   ((s.st.val[4]!).val[0]! ^^^ (s.d.val[0]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨15, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨15, by decide⟩).val = 16 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨15, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨15, by decide⟩)).val = 4 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨15, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_16_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[16]!).bv =
-      lift_lane_bv ((s.st.val[19]!).val[1]! ^^^ (s.d.val[3]!).val[0]!).bv
-                   ((s.st.val[19]!).val[0]! ^^^ (s.d.val[3]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[6]!).val[1]! ^^^ (s.d.val[1]!).val[0]!).bv
+                   ((s.st.val[6]!).val[0]! ^^^ (s.d.val[1]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨16, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨16, by decide⟩).val = 19 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨16, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨16, by decide⟩)).val = 6 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨16, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_17_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[17]!).bv =
-      lift_lane_bv ((s.st.val[17]!).val[1]! ^^^ (s.d.val[3]!).val[0]!).bv
-                   ((s.st.val[17]!).val[0]! ^^^ (s.d.val[3]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[13]!).val[1]! ^^^ (s.d.val[2]!).val[0]!).bv
+                   ((s.st.val[13]!).val[0]! ^^^ (s.d.val[2]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨17, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨17, by decide⟩).val = 17 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨17, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨17, by decide⟩)).val = 13 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨17, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
@@ -547,69 +530,63 @@ theorem lift_theta_applied_perm_bv_18_3 (s : state.KeccakState) :
       lift_lane_bv ((s.st.val[15]!).val[1]! ^^^ (s.d.val[3]!).val[0]!).bv
                    ((s.st.val[15]!).val[0]! ^^^ (s.d.val[3]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨18, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨18, by decide⟩).val = 15 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨18, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨18, by decide⟩)).val = 15 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨18, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_19_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[19]!).bv =
-      lift_lane_bv ((s.st.val[18]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
-                   ((s.st.val[18]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[22]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
+                   ((s.st.val[22]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨19, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨19, by decide⟩).val = 18 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨19, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨19, by decide⟩)).val = 22 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨19, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_20_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[20]!).bv =
-      lift_lane_bv ((s.st.val[23]!).val[1]! ^^^ (s.d.val[4]!).val[0]!).bv
-                   ((s.st.val[23]!).val[0]! ^^^ (s.d.val[4]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[2]!).val[0]! ^^^ (s.d.val[0]!).val[0]!).bv
+                   ((s.st.val[2]!).val[1]! ^^^ (s.d.val[0]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨20, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨20, by decide⟩).val = 23 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨20, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨20, by decide⟩)).val = 2 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨20, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_21_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[21]!).bv =
-      lift_lane_bv ((s.st.val[21]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
-                   ((s.st.val[21]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[9]!).val[0]! ^^^ (s.d.val[1]!).val[0]!).bv
+                   ((s.st.val[9]!).val[1]! ^^^ (s.d.val[1]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨21, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨21, by decide⟩).val = 21 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨21, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨21, by decide⟩)).val = 9 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨21, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_22_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[22]!).bv =
-      lift_lane_bv ((s.st.val[24]!).val[1]! ^^^ (s.d.val[4]!).val[0]!).bv
-                   ((s.st.val[24]!).val[0]! ^^^ (s.d.val[4]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[11]!).val[1]! ^^^ (s.d.val[2]!).val[0]!).bv
+                   ((s.st.val[11]!).val[0]! ^^^ (s.d.val[2]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨22, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨22, by decide⟩).val = 24 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨22, by decide⟩) = true := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨22, by decide⟩)).val = 11 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨22, by decide⟩)) = true := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
 theorem lift_theta_applied_perm_bv_23_3 (s : state.KeccakState) :
     ((lift_theta_applied_perm s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)).val[23]!).bv =
-      lift_lane_bv ((s.st.val[22]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
-                   ((s.st.val[22]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
+      lift_lane_bv ((s.st.val[18]!).val[0]! ^^^ (s.d.val[3]!).val[0]!).bv
+                   ((s.st.val[18]!).val[1]! ^^^ (s.d.val[3]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨23, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨23, by decide⟩).val = 22 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨23, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨23, by decide⟩)).val = 18 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨23, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
@@ -619,9 +596,8 @@ theorem lift_theta_applied_perm_bv_24_3 (s : state.KeccakState) :
       lift_lane_bv ((s.st.val[20]!).val[0]! ^^^ (s.d.val[4]!).val[0]!).bv
                    ((s.st.val[20]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
   rw [lta_perm_getElem_3 s (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3) ⟨24, by decide⟩]
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨24, by decide⟩).val = 20 := by decide
-  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) ⟨24, by decide⟩) = false := by
-    rw [impl_swap_k_three]; decide
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨24, by decide⟩)).val = 20 := by decide
+  have hsw : impl_swap_k 3 ((impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm ⟨24, by decide⟩)) = false := by rw [impl_swap_k_three]; decide
   show (lift_lane_maybe_swap _ _ ^^^ lift_lane _).bv = _
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
@@ -634,7 +610,8 @@ for input and the canonical `Foundation.lift r_impl` for output.
 Output collapse: `impl_perm^[4] = id` and `impl_swap_k 4 = swZero`, so
 `lift_perm r_impl (impl_perm^[4]) (impl_swap_k 4) = Foundation.lift r_impl`. -/
 
-/-- Bridge: canonical `lift` equals `lift_perm` at `(impl_perm^[4], impl_swap_k 4)`. -/
+/-- Bridge: canonical `lift` equals `lift_perm` at `(impl_perm^[4], impl_swap_k 4)`.
+    Under the new layout both sides apply `transpose_perm` internally. -/
 private theorem lift_eq_lift_perm_pow4 (r : state.KeccakState) :
     Foundation.lift r =
       lift_perm r (impl_perm ∘ impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 4) := by
@@ -643,10 +620,13 @@ private theorem lift_eq_lift_perm_pow4 (r : state.KeccakState) :
   show List.ofFn _ = List.ofFn _
   congr 1
   funext i
-  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm ∘ impl_perm) i).val = i.val := by
-    show (impl_perm (impl_perm (impl_perm (impl_perm i)))).val = i.val
+  have hp : ((impl_perm ∘ impl_perm ∘ impl_perm ∘ impl_perm) (transpose_perm i)).val
+             = (transpose_perm i).val := by
+    show (impl_perm (impl_perm (impl_perm (impl_perm (transpose_perm i))))).val
+           = (transpose_perm i).val
     rw [impl_perm_pow4_eq_id]
-  have hsw : impl_swap_k 4 ((impl_perm ∘ impl_perm ∘ impl_perm ∘ impl_perm) i) = false := by
+  have hsw : impl_swap_k 4 ((impl_perm ∘ impl_perm ∘ impl_perm ∘ impl_perm)
+                            (transpose_perm i)) = false := by
     unfold impl_swap_k; rfl
   rw [hp, hsw]
   unfold lift_lane_maybe_swap
@@ -692,7 +672,7 @@ theorem prc_lift_spec_3 (s : state.KeccakState) (hi_lt : s.i.val < 24) :
   have hlane : ∀ (L : lane.Lane2U32), L.val.length = 2 := fun L => L.2
   rw [lift_eq_lift_perm_pow4]
   apply Subtype.ext
-  unfold prc_spec lift_perm
+  unfold prc_spec lift_perm transpose_perm
   conv_rhs =>
     rw [show (impl_swap_k 4) = (fun _ : Fin 25 => false) from by
       funext L; unfold impl_swap_k; rfl]

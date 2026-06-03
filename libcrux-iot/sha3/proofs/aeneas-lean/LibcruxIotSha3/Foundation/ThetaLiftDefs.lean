@@ -412,8 +412,11 @@ private abbrev lta (st_z0 st_z1 d_z0 d_z1 : Std.U32) : Std.U64 :=
   ⟨lift_lane_bv ((st_z0 ^^^ d_z0).bv) ((st_z1 ^^^ d_z1).bv)⟩
 
 /-- The 25-lane `u64` state that the spec's `theta_unrolled` produces
-    given the impl's post-θ scratch cells. Each lane `i` is
-    `lift_lane_bv (s.st[i].z0 ⊕ s.d[i/5].z0) (s.st[i].z1 ⊕ s.d[i/5].z1)`.
+    given the impl's post-θ scratch cells. Each spec lane `i = 5*y + x` is
+    `lift_lane_bv (s.st[transpose_perm i].z0 ⊕ s.d[i%5].z0)
+                  (s.st[transpose_perm i].z1 ⊕ s.d[i%5].z1)`,
+    where `transpose_perm i = 5*x + y` is the impl-side index for the lane
+    that lives at spec position `i`, and `i%5 = x` indexes the spec column.
 
     Written as a literal 25-element list (rather than `List.ofFn`) so
     that `unfold lift_theta_applied` exposes a concrete cons list — this
@@ -423,30 +426,55 @@ private abbrev lta (st_z0 st_z1 d_z0 d_z1 : Std.U32) : Std.U64 :=
 def lift_theta_applied (s : state.KeccakState) : Std.Array Std.U64 25#usize :=
   let d := s.d; let st := s.st
   Std.Array.make 25#usize [
-    lta (st.val[0]!).val[0]! (st.val[0]!).val[1]! (d.val[0]!).val[0]! (d.val[0]!).val[1]!,
-    lta (st.val[1]!).val[0]! (st.val[1]!).val[1]! (d.val[0]!).val[0]! (d.val[0]!).val[1]!,
-    lta (st.val[2]!).val[0]! (st.val[2]!).val[1]! (d.val[0]!).val[0]! (d.val[0]!).val[1]!,
-    lta (st.val[3]!).val[0]! (st.val[3]!).val[1]! (d.val[0]!).val[0]! (d.val[0]!).val[1]!,
-    lta (st.val[4]!).val[0]! (st.val[4]!).val[1]! (d.val[0]!).val[0]! (d.val[0]!).val[1]!,
-    lta (st.val[5]!).val[0]! (st.val[5]!).val[1]! (d.val[1]!).val[0]! (d.val[1]!).val[1]!,
-    lta (st.val[6]!).val[0]! (st.val[6]!).val[1]! (d.val[1]!).val[0]! (d.val[1]!).val[1]!,
-    lta (st.val[7]!).val[0]! (st.val[7]!).val[1]! (d.val[1]!).val[0]! (d.val[1]!).val[1]!,
-    lta (st.val[8]!).val[0]! (st.val[8]!).val[1]! (d.val[1]!).val[0]! (d.val[1]!).val[1]!,
-    lta (st.val[9]!).val[0]! (st.val[9]!).val[1]! (d.val[1]!).val[0]! (d.val[1]!).val[1]!,
+    -- i=0:  (x=0, y=0) → st[0],  d[0]
+    lta (st.val[0]!).val[0]!  (st.val[0]!).val[1]!  (d.val[0]!).val[0]! (d.val[0]!).val[1]!,
+    -- i=1:  (x=1, y=0) → st[5],  d[1]
+    lta (st.val[5]!).val[0]!  (st.val[5]!).val[1]!  (d.val[1]!).val[0]! (d.val[1]!).val[1]!,
+    -- i=2:  (x=2, y=0) → st[10], d[2]
     lta (st.val[10]!).val[0]! (st.val[10]!).val[1]! (d.val[2]!).val[0]! (d.val[2]!).val[1]!,
-    lta (st.val[11]!).val[0]! (st.val[11]!).val[1]! (d.val[2]!).val[0]! (d.val[2]!).val[1]!,
-    lta (st.val[12]!).val[0]! (st.val[12]!).val[1]! (d.val[2]!).val[0]! (d.val[2]!).val[1]!,
-    lta (st.val[13]!).val[0]! (st.val[13]!).val[1]! (d.val[2]!).val[0]! (d.val[2]!).val[1]!,
-    lta (st.val[14]!).val[0]! (st.val[14]!).val[1]! (d.val[2]!).val[0]! (d.val[2]!).val[1]!,
+    -- i=3:  (x=3, y=0) → st[15], d[3]
     lta (st.val[15]!).val[0]! (st.val[15]!).val[1]! (d.val[3]!).val[0]! (d.val[3]!).val[1]!,
-    lta (st.val[16]!).val[0]! (st.val[16]!).val[1]! (d.val[3]!).val[0]! (d.val[3]!).val[1]!,
-    lta (st.val[17]!).val[0]! (st.val[17]!).val[1]! (d.val[3]!).val[0]! (d.val[3]!).val[1]!,
-    lta (st.val[18]!).val[0]! (st.val[18]!).val[1]! (d.val[3]!).val[0]! (d.val[3]!).val[1]!,
-    lta (st.val[19]!).val[0]! (st.val[19]!).val[1]! (d.val[3]!).val[0]! (d.val[3]!).val[1]!,
+    -- i=4:  (x=4, y=0) → st[20], d[4]
     lta (st.val[20]!).val[0]! (st.val[20]!).val[1]! (d.val[4]!).val[0]! (d.val[4]!).val[1]!,
+    -- i=5:  (x=0, y=1) → st[1],  d[0]
+    lta (st.val[1]!).val[0]!  (st.val[1]!).val[1]!  (d.val[0]!).val[0]! (d.val[0]!).val[1]!,
+    -- i=6:  (x=1, y=1) → st[6],  d[1]
+    lta (st.val[6]!).val[0]!  (st.val[6]!).val[1]!  (d.val[1]!).val[0]! (d.val[1]!).val[1]!,
+    -- i=7:  (x=2, y=1) → st[11], d[2]
+    lta (st.val[11]!).val[0]! (st.val[11]!).val[1]! (d.val[2]!).val[0]! (d.val[2]!).val[1]!,
+    -- i=8:  (x=3, y=1) → st[16], d[3]
+    lta (st.val[16]!).val[0]! (st.val[16]!).val[1]! (d.val[3]!).val[0]! (d.val[3]!).val[1]!,
+    -- i=9:  (x=4, y=1) → st[21], d[4]
     lta (st.val[21]!).val[0]! (st.val[21]!).val[1]! (d.val[4]!).val[0]! (d.val[4]!).val[1]!,
+    -- i=10: (x=0, y=2) → st[2],  d[0]
+    lta (st.val[2]!).val[0]!  (st.val[2]!).val[1]!  (d.val[0]!).val[0]! (d.val[0]!).val[1]!,
+    -- i=11: (x=1, y=2) → st[7],  d[1]
+    lta (st.val[7]!).val[0]!  (st.val[7]!).val[1]!  (d.val[1]!).val[0]! (d.val[1]!).val[1]!,
+    -- i=12: (x=2, y=2) → st[12], d[2]
+    lta (st.val[12]!).val[0]! (st.val[12]!).val[1]! (d.val[2]!).val[0]! (d.val[2]!).val[1]!,
+    -- i=13: (x=3, y=2) → st[17], d[3]
+    lta (st.val[17]!).val[0]! (st.val[17]!).val[1]! (d.val[3]!).val[0]! (d.val[3]!).val[1]!,
+    -- i=14: (x=4, y=2) → st[22], d[4]
     lta (st.val[22]!).val[0]! (st.val[22]!).val[1]! (d.val[4]!).val[0]! (d.val[4]!).val[1]!,
+    -- i=15: (x=0, y=3) → st[3],  d[0]
+    lta (st.val[3]!).val[0]!  (st.val[3]!).val[1]!  (d.val[0]!).val[0]! (d.val[0]!).val[1]!,
+    -- i=16: (x=1, y=3) → st[8],  d[1]
+    lta (st.val[8]!).val[0]!  (st.val[8]!).val[1]!  (d.val[1]!).val[0]! (d.val[1]!).val[1]!,
+    -- i=17: (x=2, y=3) → st[13], d[2]
+    lta (st.val[13]!).val[0]! (st.val[13]!).val[1]! (d.val[2]!).val[0]! (d.val[2]!).val[1]!,
+    -- i=18: (x=3, y=3) → st[18], d[3]
+    lta (st.val[18]!).val[0]! (st.val[18]!).val[1]! (d.val[3]!).val[0]! (d.val[3]!).val[1]!,
+    -- i=19: (x=4, y=3) → st[23], d[4]
     lta (st.val[23]!).val[0]! (st.val[23]!).val[1]! (d.val[4]!).val[0]! (d.val[4]!).val[1]!,
+    -- i=20: (x=0, y=4) → st[4],  d[0]
+    lta (st.val[4]!).val[0]!  (st.val[4]!).val[1]!  (d.val[0]!).val[0]! (d.val[0]!).val[1]!,
+    -- i=21: (x=1, y=4) → st[9],  d[1]
+    lta (st.val[9]!).val[0]!  (st.val[9]!).val[1]!  (d.val[1]!).val[0]! (d.val[1]!).val[1]!,
+    -- i=22: (x=2, y=4) → st[14], d[2]
+    lta (st.val[14]!).val[0]! (st.val[14]!).val[1]! (d.val[2]!).val[0]! (d.val[2]!).val[1]!,
+    -- i=23: (x=3, y=4) → st[19], d[3]
+    lta (st.val[19]!).val[0]! (st.val[19]!).val[1]! (d.val[3]!).val[0]! (d.val[3]!).val[1]!,
+    -- i=24: (x=4, y=4) → st[24], d[4]
     lta (st.val[24]!).val[0]! (st.val[24]!).val[1]! (d.val[4]!).val[0]! (d.val[4]!).val[1]!]
 
 /-! ## Perm/swap-aware lift_theta_applied (rounds 1–3)
@@ -475,147 +503,173 @@ def lift_theta_applied_perm
     (s : state.KeccakState) (p : Fin 25 → Fin 25) (sw : Fin 25 → Bool) :
     Std.Array Std.U64 25#usize :=
   ⟨List.ofFn (fun i : Fin 25 =>
-    (lift_lane_maybe_swap (s.st.val[(p i).val]!) (sw (p i))) ^^^
-      (lift_lane (s.d.val[i.val / 5]!))),
+    (lift_lane_maybe_swap (s.st.val[(p (transpose_perm i)).val]!)
+                          (sw (p (transpose_perm i)))) ^^^
+      (lift_lane (s.d.val[i.val % 5]!))),
    by simp⟩
 
 /-- `lift_theta_applied_perm` at `(id, swZero)` equals `lift_theta_applied`.
-    Bridges the round-0 proofs to the new perm-aware machinery. -/
+    Bridges the round-0 proofs to the perm-aware machinery. -/
 theorem lift_theta_applied_perm_id (s : state.KeccakState) :
     lift_theta_applied_perm s id (fun _ => false) = lift_theta_applied s := by
   apply Subtype.ext
   unfold lift_theta_applied_perm lift_theta_applied
   show List.ofFn _ = _
   simp only [Std.Array.make, id_eq, lift_lane_maybe_swap]
-  -- 25 cells, each `lift_lane (s.st[i]) ^^^ lift_lane (s.d[i/5])` = `lta` cell.
+  -- 25 cells, each `lift_lane (s.st[transpose_perm i]) ^^^ lift_lane (s.d[i%5]) = lta`.
   repeat' (first | rfl | (apply List.cons_eq_cons.mpr; refine ⟨?_, ?_⟩))
   all_goals (apply Std.U64.bv_eq_imp_eq)
   all_goals (
     show (lift_lane _ ^^^ lift_lane _).bv = _
-    simp [lift_lane, Std.UScalar.bv_xor, lift_xor])
+    simp [lift_lane, transpose_perm, Std.UScalar.bv_xor, lift_xor])
 
 /-- Bridge from the lift definition: indexing `lift s` at a `Fin 25` returns
-    the lifted interleaved halves of `s.st[k]`. Used to rewrite the spec-side
-    chain hypotheses `r✝ = (lift s)[k]!` into BitVec form. Stated over `Fin 25`
-    so the `lift`-side `List.ofFn` reduces by `Fin.getElem` rather than a
-    generic Nat index. -/
+    the lifted interleaved halves of `s.st[transpose_perm k]`. Used to
+    rewrite the spec-side chain hypotheses `r✝ = (lift s)[k]!` into
+    BitVec form. -/
 private theorem lift_getElem (s : state.KeccakState) (k : Fin 25) :
     (lift s).val[k.val]! =
-      (⟨lift_lane_bv ((s.st.val[k.val]!).val[0]!.bv) ((s.st.val[k.val]!).val[1]!.bv)⟩ : Std.U64) := by
+      (⟨lift_lane_bv ((s.st.val[(transpose_perm k).val]!).val[0]!.bv)
+                     ((s.st.val[(transpose_perm k).val]!).val[1]!.bv)⟩ : Std.U64) := by
   unfold lift lift_lane
   change (List.ofFn _)[k.val]! = _
   rw [getElem!_pos _ k.val (by simpa using k.isLt), List.getElem_ofFn]
 
 private theorem lift_getElem_bv (s : state.KeccakState) (k : Fin 25) :
     ((↑(lift s) : List Std.U64)[(k.val : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[k.val]!).val[0]!.bv) ((s.st.val[k.val]!).val[1]!.bv) := by
+      lift_lane_bv ((s.st.val[(transpose_perm k).val]!).val[0]!.bv)
+                   ((s.st.val[(transpose_perm k).val]!).val[1]!.bv) := by
   rw [lift_getElem]
 
-/-- 25 concrete-index specialisations of `lift_getElem_bv`, stated in the
-    "coerced-list" form `(↑(lift s))[↑N#usize : Std.Usize)]!.bv` to match
-    exactly the syntactic shape `hax_mvcgen` produces in `theta_unrolled`'s
-    spec-side chain. Each fires as a simp rewrite to expose the underlying
-    `lift_lane_bv` for the algebraic close. -/
+/-- 25 concrete-index specialisations of `lift_getElem_bv`. Each lemma
+    `lift_getElem_bv_N` reads `(↑(lift s))[N]!.bv` and exposes the
+    `lift_lane_bv` of `s.st[transpose_perm N]` (impl-side index after the
+    spec↔impl transpose). -/
 theorem lift_getElem_bv_0 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(0 : Nat)]!).bv =
       lift_lane_bv ((s.st.val[0]!).val[0]!.bv) ((s.st.val[0]!).val[1]!.bv) := by
-  show ((lift s).val[0]!).bv = _; exact lift_getElem_bv s ⟨0, by decide⟩
+  show ((lift s).val[0]!).bv = _
+  exact lift_getElem_bv s ⟨0, by decide⟩
 theorem lift_getElem_bv_1 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(1 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[1]!).val[0]!.bv) ((s.st.val[1]!).val[1]!.bv) := by
-  show ((lift s).val[1]!).bv = _; exact lift_getElem_bv s ⟨1, by decide⟩
+      lift_lane_bv ((s.st.val[5]!).val[0]!.bv) ((s.st.val[5]!).val[1]!.bv) := by
+  show ((lift s).val[1]!).bv = _
+  exact lift_getElem_bv s ⟨1, by decide⟩
 theorem lift_getElem_bv_2 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(2 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[2]!).val[0]!.bv) ((s.st.val[2]!).val[1]!.bv) := by
-  show ((lift s).val[2]!).bv = _; exact lift_getElem_bv s ⟨2, by decide⟩
+      lift_lane_bv ((s.st.val[10]!).val[0]!.bv) ((s.st.val[10]!).val[1]!.bv) := by
+  show ((lift s).val[2]!).bv = _
+  exact lift_getElem_bv s ⟨2, by decide⟩
 theorem lift_getElem_bv_3 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(3 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[3]!).val[0]!.bv) ((s.st.val[3]!).val[1]!.bv) := by
-  show ((lift s).val[3]!).bv = _; exact lift_getElem_bv s ⟨3, by decide⟩
+      lift_lane_bv ((s.st.val[15]!).val[0]!.bv) ((s.st.val[15]!).val[1]!.bv) := by
+  show ((lift s).val[3]!).bv = _
+  exact lift_getElem_bv s ⟨3, by decide⟩
 theorem lift_getElem_bv_4 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(4 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[4]!).val[0]!.bv) ((s.st.val[4]!).val[1]!.bv) := by
-  show ((lift s).val[4]!).bv = _; exact lift_getElem_bv s ⟨4, by decide⟩
+      lift_lane_bv ((s.st.val[20]!).val[0]!.bv) ((s.st.val[20]!).val[1]!.bv) := by
+  show ((lift s).val[4]!).bv = _
+  exact lift_getElem_bv s ⟨4, by decide⟩
 theorem lift_getElem_bv_5 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(5 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[5]!).val[0]!.bv) ((s.st.val[5]!).val[1]!.bv) := by
-  show ((lift s).val[5]!).bv = _; exact lift_getElem_bv s ⟨5, by decide⟩
+      lift_lane_bv ((s.st.val[1]!).val[0]!.bv) ((s.st.val[1]!).val[1]!.bv) := by
+  show ((lift s).val[5]!).bv = _
+  exact lift_getElem_bv s ⟨5, by decide⟩
 theorem lift_getElem_bv_6 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(6 : Nat)]!).bv =
       lift_lane_bv ((s.st.val[6]!).val[0]!.bv) ((s.st.val[6]!).val[1]!.bv) := by
-  show ((lift s).val[6]!).bv = _; exact lift_getElem_bv s ⟨6, by decide⟩
+  show ((lift s).val[6]!).bv = _
+  exact lift_getElem_bv s ⟨6, by decide⟩
 theorem lift_getElem_bv_7 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(7 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[7]!).val[0]!.bv) ((s.st.val[7]!).val[1]!.bv) := by
-  show ((lift s).val[7]!).bv = _; exact lift_getElem_bv s ⟨7, by decide⟩
+      lift_lane_bv ((s.st.val[11]!).val[0]!.bv) ((s.st.val[11]!).val[1]!.bv) := by
+  show ((lift s).val[7]!).bv = _
+  exact lift_getElem_bv s ⟨7, by decide⟩
 theorem lift_getElem_bv_8 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(8 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[8]!).val[0]!.bv) ((s.st.val[8]!).val[1]!.bv) := by
-  show ((lift s).val[8]!).bv = _; exact lift_getElem_bv s ⟨8, by decide⟩
+      lift_lane_bv ((s.st.val[16]!).val[0]!.bv) ((s.st.val[16]!).val[1]!.bv) := by
+  show ((lift s).val[8]!).bv = _
+  exact lift_getElem_bv s ⟨8, by decide⟩
 theorem lift_getElem_bv_9 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(9 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[9]!).val[0]!.bv) ((s.st.val[9]!).val[1]!.bv) := by
-  show ((lift s).val[9]!).bv = _; exact lift_getElem_bv s ⟨9, by decide⟩
+      lift_lane_bv ((s.st.val[21]!).val[0]!.bv) ((s.st.val[21]!).val[1]!.bv) := by
+  show ((lift s).val[9]!).bv = _
+  exact lift_getElem_bv s ⟨9, by decide⟩
 theorem lift_getElem_bv_10 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(10 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[10]!).val[0]!.bv) ((s.st.val[10]!).val[1]!.bv) := by
-  show ((lift s).val[10]!).bv = _; exact lift_getElem_bv s ⟨10, by decide⟩
+      lift_lane_bv ((s.st.val[2]!).val[0]!.bv) ((s.st.val[2]!).val[1]!.bv) := by
+  show ((lift s).val[10]!).bv = _
+  exact lift_getElem_bv s ⟨10, by decide⟩
 theorem lift_getElem_bv_11 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(11 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[11]!).val[0]!.bv) ((s.st.val[11]!).val[1]!.bv) := by
-  show ((lift s).val[11]!).bv = _; exact lift_getElem_bv s ⟨11, by decide⟩
+      lift_lane_bv ((s.st.val[7]!).val[0]!.bv) ((s.st.val[7]!).val[1]!.bv) := by
+  show ((lift s).val[11]!).bv = _
+  exact lift_getElem_bv s ⟨11, by decide⟩
 theorem lift_getElem_bv_12 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(12 : Nat)]!).bv =
       lift_lane_bv ((s.st.val[12]!).val[0]!.bv) ((s.st.val[12]!).val[1]!.bv) := by
-  show ((lift s).val[12]!).bv = _; exact lift_getElem_bv s ⟨12, by decide⟩
+  show ((lift s).val[12]!).bv = _
+  exact lift_getElem_bv s ⟨12, by decide⟩
 theorem lift_getElem_bv_13 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(13 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[13]!).val[0]!.bv) ((s.st.val[13]!).val[1]!.bv) := by
-  show ((lift s).val[13]!).bv = _; exact lift_getElem_bv s ⟨13, by decide⟩
+      lift_lane_bv ((s.st.val[17]!).val[0]!.bv) ((s.st.val[17]!).val[1]!.bv) := by
+  show ((lift s).val[13]!).bv = _
+  exact lift_getElem_bv s ⟨13, by decide⟩
 theorem lift_getElem_bv_14 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(14 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[14]!).val[0]!.bv) ((s.st.val[14]!).val[1]!.bv) := by
-  show ((lift s).val[14]!).bv = _; exact lift_getElem_bv s ⟨14, by decide⟩
+      lift_lane_bv ((s.st.val[22]!).val[0]!.bv) ((s.st.val[22]!).val[1]!.bv) := by
+  show ((lift s).val[14]!).bv = _
+  exact lift_getElem_bv s ⟨14, by decide⟩
 theorem lift_getElem_bv_15 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(15 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[15]!).val[0]!.bv) ((s.st.val[15]!).val[1]!.bv) := by
-  show ((lift s).val[15]!).bv = _; exact lift_getElem_bv s ⟨15, by decide⟩
+      lift_lane_bv ((s.st.val[3]!).val[0]!.bv) ((s.st.val[3]!).val[1]!.bv) := by
+  show ((lift s).val[15]!).bv = _
+  exact lift_getElem_bv s ⟨15, by decide⟩
 theorem lift_getElem_bv_16 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(16 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[16]!).val[0]!.bv) ((s.st.val[16]!).val[1]!.bv) := by
-  show ((lift s).val[16]!).bv = _; exact lift_getElem_bv s ⟨16, by decide⟩
+      lift_lane_bv ((s.st.val[8]!).val[0]!.bv) ((s.st.val[8]!).val[1]!.bv) := by
+  show ((lift s).val[16]!).bv = _
+  exact lift_getElem_bv s ⟨16, by decide⟩
 theorem lift_getElem_bv_17 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(17 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[17]!).val[0]!.bv) ((s.st.val[17]!).val[1]!.bv) := by
-  show ((lift s).val[17]!).bv = _; exact lift_getElem_bv s ⟨17, by decide⟩
+      lift_lane_bv ((s.st.val[13]!).val[0]!.bv) ((s.st.val[13]!).val[1]!.bv) := by
+  show ((lift s).val[17]!).bv = _
+  exact lift_getElem_bv s ⟨17, by decide⟩
 theorem lift_getElem_bv_18 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(18 : Nat)]!).bv =
       lift_lane_bv ((s.st.val[18]!).val[0]!.bv) ((s.st.val[18]!).val[1]!.bv) := by
-  show ((lift s).val[18]!).bv = _; exact lift_getElem_bv s ⟨18, by decide⟩
+  show ((lift s).val[18]!).bv = _
+  exact lift_getElem_bv s ⟨18, by decide⟩
 theorem lift_getElem_bv_19 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(19 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[19]!).val[0]!.bv) ((s.st.val[19]!).val[1]!.bv) := by
-  show ((lift s).val[19]!).bv = _; exact lift_getElem_bv s ⟨19, by decide⟩
+      lift_lane_bv ((s.st.val[23]!).val[0]!.bv) ((s.st.val[23]!).val[1]!.bv) := by
+  show ((lift s).val[19]!).bv = _
+  exact lift_getElem_bv s ⟨19, by decide⟩
 theorem lift_getElem_bv_20 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(20 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[20]!).val[0]!.bv) ((s.st.val[20]!).val[1]!.bv) := by
-  show ((lift s).val[20]!).bv = _; exact lift_getElem_bv s ⟨20, by decide⟩
+      lift_lane_bv ((s.st.val[4]!).val[0]!.bv) ((s.st.val[4]!).val[1]!.bv) := by
+  show ((lift s).val[20]!).bv = _
+  exact lift_getElem_bv s ⟨20, by decide⟩
 theorem lift_getElem_bv_21 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(21 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[21]!).val[0]!.bv) ((s.st.val[21]!).val[1]!.bv) := by
-  show ((lift s).val[21]!).bv = _; exact lift_getElem_bv s ⟨21, by decide⟩
+      lift_lane_bv ((s.st.val[9]!).val[0]!.bv) ((s.st.val[9]!).val[1]!.bv) := by
+  show ((lift s).val[21]!).bv = _
+  exact lift_getElem_bv s ⟨21, by decide⟩
 theorem lift_getElem_bv_22 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(22 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[22]!).val[0]!.bv) ((s.st.val[22]!).val[1]!.bv) := by
-  show ((lift s).val[22]!).bv = _; exact lift_getElem_bv s ⟨22, by decide⟩
+      lift_lane_bv ((s.st.val[14]!).val[0]!.bv) ((s.st.val[14]!).val[1]!.bv) := by
+  show ((lift s).val[22]!).bv = _
+  exact lift_getElem_bv s ⟨22, by decide⟩
 theorem lift_getElem_bv_23 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(23 : Nat)]!).bv =
-      lift_lane_bv ((s.st.val[23]!).val[0]!.bv) ((s.st.val[23]!).val[1]!.bv) := by
-  show ((lift s).val[23]!).bv = _; exact lift_getElem_bv s ⟨23, by decide⟩
+      lift_lane_bv ((s.st.val[19]!).val[0]!.bv) ((s.st.val[19]!).val[1]!.bv) := by
+  show ((lift s).val[23]!).bv = _
+  exact lift_getElem_bv s ⟨23, by decide⟩
 theorem lift_getElem_bv_24 (s : state.KeccakState) :
     ((↑(lift s) : List Std.U64)[(24 : Nat)]!).bv =
       lift_lane_bv ((s.st.val[24]!).val[0]!.bv) ((s.st.val[24]!).val[1]!.bv) := by
-  show ((lift s).val[24]!).bv = _; exact lift_getElem_bv s ⟨24, by decide⟩
+  show ((lift s).val[24]!).bv = _
+  exact lift_getElem_bv s ⟨24, by decide⟩
 
 /-! ## Spec-coupling theorem
 

@@ -450,33 +450,29 @@ theorem keccak.absorb_block_spec
     -- Now we have a clean BitVec 64 = BitVec UScalarTy.U64.numBits goal —
     -- but `UScalarTy.U64.numBits` reduces to `64` definitionally.
     rw [h_lane]
-    -- Unfold `xor_block_value_at`.
+    -- Unfold `xor_block_value_at`. Under the new spec layout, the byte
+    -- block index equals the spec index `k` (no transpose).
     unfold xor_block_value_at
-    set b := 5 * (k % 5) + k / 5 with hb_def
-    by_cases h_b_lt : b < RATE.val / 8
-    · -- Active cell: `b < RATE.val / 8`.
-      rw [if_pos h_b_lt, if_pos h_b_lt]
-      -- LHS at `.bv`: `(state[k]! ^^^ from_le_bytes ...).bv`.
-      -- `UScalar.bv_xor` (refl-defined): `(x ^^^ y).bv = x.bv ^^^ y.bv`.
-      -- The `U64.bv` abbrev unfolds to `UScalar.bv`.
+    by_cases h_k_lt : k < RATE.val / 8
+    · -- Active cell: `k < RATE.val / 8`.
+      rw [if_pos h_k_lt, if_pos h_k_lt]
       show (_ ^^^ _ : Std.U64).bv = _
       rw [Std.UScalar.bv_xor]
-      -- Reduce `8 * b + 8 ≤ RATE.val` from `h_b_lt : b < RATE.val / 8`.
+      -- Reduce `8 * k + 8 ≤ RATE.val` from `h_k_lt : k < RATE.val / 8`.
       have h_RATE_div_mul : 8 * (RATE.val / 8) ≤ RATE.val := by
         have h_decomp : RATE.val = 8 * (RATE.val / 8) + RATE.val % 8 :=
           (Nat.div_add_mod _ _).symm
         omega
-      have h_8b : 8 * b + 8 ≤ RATE.val := by
-        have : b + 1 ≤ RATE.val / 8 := h_b_lt
-        have h_mul : 8 * (b + 1) ≤ 8 * (RATE.val / 8) :=
+      have h_8k : 8 * k + 8 ≤ RATE.val := by
+        have : k + 1 ≤ RATE.val / 8 := h_k_lt
+        have h_mul : 8 * (k + 1) ≤ 8 * (RATE.val / 8) :=
           Nat.mul_le_mul_left 8 this
         omega
-      -- Use the bridge to convert.
       have h_bridge := load_block_to_xor_block_bridge
-        blocks start RATE b block h_block_val h_blk h_8b
+        blocks start RATE k block h_block_val h_blk h_8k
       rw [h_bridge]
     · -- Inactive cell.
-      rw [if_neg h_b_lt, if_neg h_b_lt]
+      rw [if_neg h_k_lt, if_neg h_k_lt]
   -- Step 5: substitute `s_spec_1 = lift s1` into the do-chain.
   -- Goal: ⦃True⦄ keccak.absorb_block ... ⦃⇓r => r.i.val = 0 ∧ sponge.absorb_block (lift s) block RATE = .ok (lift r)⦄
   have h_spec_compose :
