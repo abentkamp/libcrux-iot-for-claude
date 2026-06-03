@@ -752,7 +752,7 @@ theorem sponge_squeeze_byte_eq
     rfl
   -- Apply createi_pure_eq.
   have h_createi :=
-    _root_.libcrux_iot_sha3.Composition.createi_pure_eq OUTPUT_LEN
+    _root_.libcrux_iot_sha3.Foundation.createi_pure_eq OUTPUT_LEN
       (sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU8 OUTPUT_LEN)
       (rate, state) f h_call_mut_eq
   refine ⟨_, h_createi, ?_⟩

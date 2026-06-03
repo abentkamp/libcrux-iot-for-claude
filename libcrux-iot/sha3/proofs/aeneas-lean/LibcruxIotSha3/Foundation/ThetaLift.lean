@@ -34,25 +34,29 @@ theorem theta_lift_spec (s : state.KeccakState) :
     ⦃ ⇓ r_impl => ⌜
       r_impl.i = s.i ∧
       (do
-        let r_spec ← keccak_f.theta_unrolled (lift s)
+        let r_spec ← keccak_f.theta (lift s)
         pure (r_spec = lift_theta_applied r_impl)).holds ⌝ ⦄ := by
   apply Triple.of_entails_right _ (theta_comp_spec_local s)
   rw [PostCond.entails_noThrow]
   intro r_impl hpost
   dsimp only [PostCond.noThrow, Std.Do.SPred.down_pure]
   refine ⟨hpost.2.1, ?_⟩
-  unfold Aeneas.Std.Result.holds
-  unfold keccak_f.theta_unrolled
-  hax_mvcgen
-  all_goals try scalar_tac
-  -- Main residual: Array.make 25 [r✝²⁴..r✝] = lift_theta_applied r_impl.
-  -- Destructure the 12-conjunct theta_comp_spec_local post and the
-  -- spec-side chain, then close 25 lanes pointwise via the lifting
-  -- algebra (lift_getElem_bv + lift_xor5 + lift_td + lift_rot1).
+  -- Reduce `keccak_f.theta (lift s)` to `.ok (theta_applied (lift s))` via
+  -- the @[spec] proven in `ThetaLiftDefs`. With the unrolled variant gone,
+  -- this replaces the previous `unfold keccak_f.theta; hax_mvcgen` chain.
+  show (do let r_spec ← keccak_f.theta (lift s)
+           pure (r_spec = lift_theta_applied r_impl)).holds
+  rw [show keccak_f.theta (lift s) = .ok (theta_applied (lift s)) from
+        result_eq_of_triple (theta_spec (lift s))]
+  -- Goal: (do let r_spec ← .ok (theta_applied (lift s)); pure (...)).holds
+  -- which reduces to: theta_applied (lift s) = lift_theta_applied r_impl.
+  show ⦃⌜True⌝⦄ Result.ok (theta_applied (lift s) = lift_theta_applied r_impl) ⦃PostCond.noThrow fun p => ⌜p⌝⦄
+  simp [Std.Do.Triple, Std.Do.WP.wp]
+  show theta_applied (lift s) = lift_theta_applied r_impl
   obtain ⟨hst, _, hd0z0, hd0z1, hd1z0, hd1z1, hd2z0, hd2z1,
           hd3z0, hd3z1, hd4z0, hd4z1⟩ := hpost
   apply Subtype.ext
-  unfold lift_theta_applied
+  unfold theta_applied lift_theta_applied
   simp only [Std.Array.make, hst,
              hd0z0, hd0z1, hd1z0, hd1z1, hd2z0, hd2z1,
              hd3z0, hd3z1, hd4z0, hd4z1]

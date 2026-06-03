@@ -24,6 +24,368 @@ namespace libcrux_iot_sha3.Foundation
 
 set_option mvcgen.warning false
 
+/-! ## Bridge 1: `keccak_f.{theta, rho, pi, chi}` equal their `_unrolled` variants
+
+The hacspec definitions of `theta`/`rho`/`pi`/`chi` call `createi N inst c` —
+which expands to `rust_primitives.slice.array_from_fn N inst.FnMutInst c` —
+with closures whose `call_mut` returns `.ok (call state args, state)` (pure
+closures). The `_unrolled` variants are straight-line do-chains terminating
+in `ok (Std.Array.make N [v₀, …, v_{N-1}])`.
+
+We prove the function equality through a generic `@[spec]` lemma
+`createi_pure_spec` characterizing `createi` for pure closures, plus six
+per-closure purity lemmas (one for each of θ's 3, ρ/π/χ's 1 closures). -/
+
+/-- Per-element foldlM evaluation for pure closures. The closure state `c`
+    is invariant; the result list is `acc ++ l.map f`. -/
+private theorem createi_foldlM_pure_aux
+    {T F : Type}
+    (inst : core_models.ops.function.FnMut F Std.Usize T) (c : F) (f : Nat → T)
+    (l : List Nat) (acc : List T)
+    (hpure : ∀ k ∈ l,
+      inst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c)) :
+    l.foldlM
+      (fun (s : List T × F) (i : Nat) => do
+        let (v, f') ← inst.call_mut s.2 ⟨BitVec.ofNat _ i⟩
+        Result.ok (s.1 ++ [v], f'))
+      (acc, c) = .ok (acc ++ l.map f, c) := by
+  induction l generalizing acc with
+  | nil =>
+      simp only [List.foldlM_nil, List.map_nil, List.append_nil]
+      rfl
+  | cons h t ih =>
+      have hh : inst.call_mut c ⟨BitVec.ofNat _ h⟩ = .ok (f h, c) :=
+        hpure h List.mem_cons_self
+      have ht : ∀ k ∈ t, inst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c) :=
+        fun k hk => hpure k (List.mem_cons_of_mem _ hk)
+      have hih := ih (acc ++ [f h]) ht
+      simp only [List.foldlM_cons, hh, bind_tc_ok, List.map_cons]
+      rw [hih]
+      simp [List.append_assoc]
+
+/-- Lean-level equation for `createi` over pure closures. Used to power
+    `createi_pure_spec` (Triple form). -/
+theorem createi_pure_eq
+    {T F : Type} (N : Std.Usize)
+    (inst : core_models.ops.function.Fn F Std.Usize T) (c : F) (f : Nat → T)
+    (hpure : ∀ k : Nat, k < N.val →
+      inst.FnMutInst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c)) :
+    createi N inst c =
+      .ok ⟨(List.range N.val).map f,
+           by simp [List.length_map, List.length_range]⟩ := by
+  have hf : ∀ k ∈ List.range N.val,
+      inst.FnMutInst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c) := by
+    intro k hk; exact hpure k (List.mem_range.mp hk)
+  have h_fold :=
+    createi_foldlM_pure_aux inst.FnMutInst c f (List.range N.val) [] hf
+  simp only [List.nil_append] at h_fold
+  unfold createi core_models.array.from_fn rust_primitives.slice.array_from_fn
+  split
+  · rename_i e heq
+    rw [h_fold] at heq; exact absurd heq (by simp)
+  · rename_i heq
+    rw [h_fold] at heq; exact absurd heq (by simp)
+  · rename_i result heq
+    rw [h_fold] at heq
+    have hres : result = ((List.range N.val).map f, c) :=
+      (Result.ok.inj heq).symm
+    subst hres
+    rfl
+
+/-- **Generic pure-closure `[spec]` for `createi`.**
+
+For any closure whose `call_mut` is pure (doesn't mutate captured state),
+`createi N inst c` succeeds and its `i`-th cell is `f i`. The hypothesis
+`hpure` is a Triple over each call_mut so `hax_mvcgen` can recurse into
+it via per-closure `@[spec]` lemmas.
+
+Tagged `@[spec]` so `hax_mvcgen` chains through nested `createi` calls
+in `keccak_f.theta` (3 calls) and `keccak_f.{rho,pi,chi}` (1 call each). -/
+@[spec]
+theorem createi_pure_spec
+    {T F : Type} [Inhabited T] (N : Std.Usize)
+    (inst : core_models.ops.function.Fn F Std.Usize T) (c : F) (f : Nat → T)
+    (hpure : ∀ k : Nat, k < N.val →
+      ⦃ ⌜ True ⌝ ⦄
+      inst.FnMutInst.call_mut c ⟨BitVec.ofNat _ k⟩
+      ⦃ ⇓ r => ⌜ r = (f k, c) ⌝ ⦄) :
+    ⦃ ⌜ True ⌝ ⦄
+    createi N inst c
+    ⦃ ⇓ a => ⌜ ∀ i : Nat, i < N.val → a.val[i]! = f i ⌝ ⦄ := by
+  have hpure_eq : ∀ k : Nat, k < N.val →
+      inst.FnMutInst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c) :=
+    fun k hk => result_eq_of_triple (hpure k hk)
+  have heq := createi_pure_eq N inst c f hpure_eq
+  rw [heq]
+  simp only [Triple, WP.wp]
+  apply SPred.pure_intro
+  intro i hi
+  show ((List.range N.val).map f)[i]! = f i
+  rw [List.getElem!_eq_getElem?_getD, List.getElem?_map,
+      List.getElem?_range hi]
+  rfl
+
+/-! ### Per-closure purity (Triple form, `[spec]`-tagged for `hax_mvcgen`)
+
+Each hacspec closure used inside `theta`/`rho`/`pi`/`chi` has the shape:
+`call_mut state args := do v ← call state args; ok (v, state)` (state-preserving).
+We state the per-cell purity as a `@[spec]` Triple so `hax_mvcgen` chains
+through it when applied to a `createi`. -/
+
+/-- `f`-side of theta's first closure (computes column XORs).
+    Under the new spec layout, `C[k] = ⊕_y state[5*y + k]`. -/
+def theta_closure_c_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
+    Std.U64 :=
+  state.val[k]! ^^^ state.val[5+k]! ^^^ state.val[10+k]! ^^^
+    state.val[15+k]! ^^^ state.val[20+k]!
+
+/-- `@[spec]` for `keccak_f.get` (new layout): `get state x y = state[5*y + x]`. -/
+@[spec]
+private theorem keccak_f_get_spec
+    (state : Std.Array Std.U64 25#usize) (x y : Std.Usize)
+    (hbound : 5 * y.val + x.val < 25) :
+    ⦃ ⌜ True ⌝ ⦄ keccak_f.get state x y
+    ⦃ ⇓ r => ⌜ r = state.val[5*y.val + x.val]! ⌝ ⦄ := by
+  unfold keccak_f.get
+  hax_mvcgen
+  all_goals scalar_tac
+
+/-- Purity of theta's first closure (5 column-XORs). -/
+@[spec]
+theorem theta_closure_call_mut_spec
+    (state : Std.Array Std.U64 25#usize) (k : Std.Usize) (hk : k.val < 5) :
+    ⦃ ⌜ True ⌝ ⦄
+    keccak_f.theta.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+      state k
+    ⦃ ⇓ r => ⌜ r = (theta_closure_c_at state k.val, state) ⌝ ⦄ := by
+  unfold keccak_f.theta.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+        keccak_f.theta.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
+        theta_closure_c_at
+  hax_mvcgen
+  all_goals (first | scalar_tac | (simp; scalar_tac)
+                   | (congr 1; apply Std.U64.bv_eq_imp_eq;
+                      simp_all [Std.UScalar.bv_xor]))
+
+/-- `f`-side of theta's second closure (5 d-values: `c[(k+4)%5] ^^^
+    rotateLeft64(c[(k+1)%5], 1)`). -/
+def theta_closure_1_d_at (c : Std.Array Std.U64 5#usize) (k : Nat) :
+    Std.U64 :=
+  c.val[(k + 4) % 5]! ^^^ ⟨(c.val[(k + 1) % 5]!).bv.rotateLeft 1⟩
+
+/-- Purity of theta's second closure (5 d-values). -/
+@[spec]
+theorem theta_closure_1_call_mut_spec
+    (c : Std.Array Std.U64 5#usize) (k : Std.Usize) (hk : k.val < 5) :
+    ⦃ ⌜ True ⌝ ⦄
+    keccak_f.theta.closure_1.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+      c k
+    ⦃ ⇓ r => ⌜ r = (theta_closure_1_d_at c k.val, c) ⌝ ⦄ := by
+  unfold keccak_f.theta.closure_1.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+        keccak_f.theta.closure_1.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
+        theta_closure_1_d_at
+  hax_mvcgen
+  all_goals (first | scalar_tac
+                   | (congr 1
+                      apply Std.U64.bv_eq_imp_eq
+                      simp_all [Std.UScalar.bv_xor]
+                      try (subst_vars
+                           unfold Std.UScalar.rotate_left
+                           rfl)))
+
+/-- `f`-side of theta's third closure (25 final state values).
+    Under the new layout `k = 5*y + x`, so `x = k % 5` and `D[x] = d[k%5]`. -/
+def theta_closure_2_at
+    (sd : Std.Array Std.U64 25#usize × Std.Array Std.U64 5#usize) (k : Nat) :
+    Std.U64 :=
+  sd.1.val[k]! ^^^ sd.2.val[k % 5]!
+
+/-- Purity of theta's third closure (25 final values). -/
+@[spec]
+theorem theta_closure_2_call_mut_spec
+    (sd : Std.Array Std.U64 25#usize × Std.Array Std.U64 5#usize)
+    (k : Std.Usize) (hk : k.val < 25) :
+    ⦃ ⌜ True ⌝ ⦄
+    keccak_f.theta.closure_2.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+      sd k
+    ⦃ ⇓ r => ⌜ r = (theta_closure_2_at sd k.val, sd) ⌝ ⦄ := by
+  unfold keccak_f.theta.closure_2.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+        keccak_f.theta.closure_2.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
+        theta_closure_2_at
+  hax_mvcgen
+  all_goals (first | scalar_tac | (simp; scalar_tac)
+                   | (congr 1; apply Std.U64.bv_eq_imp_eq;
+                      simp_all [Std.UScalar.bv_xor]))
+
+/-- `f`-side of `rho`'s closure (25 lane-rotations). -/
+def rho_closure_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
+    Std.U64 :=
+  ⟨(state.val[k]!).bv.rotateLeft (keccak_f.RHO_OFFSETS.val[k]!).val⟩
+
+/-- Purity of `rho`'s closure. -/
+@[spec]
+theorem rho_closure_call_mut_spec
+    (state : Std.Array Std.U64 25#usize) (k : Std.Usize) (hk : k.val < 25) :
+    ⦃ ⌜ True ⌝ ⦄
+    keccak_f.rho.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+      state k
+    ⦃ ⇓ r => ⌜ r = (rho_closure_at state k.val, state) ⌝ ⦄ := by
+  unfold keccak_f.rho.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+        keccak_f.rho.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
+        rho_closure_at
+  hax_mvcgen
+  all_goals (first | scalar_tac
+                   | (congr 1; apply Std.U64.bv_eq_imp_eq
+                      subst_vars
+                      unfold Std.UScalar.rotate_left
+                      rfl))
+
+/-- `f`-side of `pi`'s closure (lane permutation). Under the new layout
+    `A[x,y]` is at position `5*y + x`, so π's output at `k = 5*y + x`
+    reads `state[5*x + (x+3y)%5]`. -/
+def pi_closure_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
+    Std.U64 :=
+  state.val[5 * (k % 5) + ((k % 5) + 3 * (k / 5)) % 5]!
+
+/-- Purity of `pi`'s closure. -/
+@[spec]
+theorem pi_closure_call_mut_spec
+    (state : Std.Array Std.U64 25#usize) (k : Std.Usize) (hk : k.val < 25) :
+    ⦃ ⌜ True ⌝ ⦄
+    keccak_f.pi.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+      state k
+    ⦃ ⇓ r => ⌜ r = (pi_closure_at state k.val, state) ⌝ ⦄ := by
+  unfold keccak_f.pi.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+        keccak_f.pi.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
+        pi_closure_at
+  hax_mvcgen
+  all_goals (first | scalar_tac | (simp; scalar_tac)
+                   | (congr 1; apply Std.U64.bv_eq_imp_eq;
+                      simp_all [Std.UScalar.bv_xor]))
+
+/-- `f`-side of `chi`'s closure (new layout `A[x,y]` at `5*y + x`):
+    `state[5y+x] ^^^ ((¬state[5y+(x+1)%5]) &&& state[5y+(x+2)%5])`,
+    where `y = k/5`, `x = k%5`. -/
+def chi_closure_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
+    Std.U64 :=
+  let y := k / 5
+  let x := k % 5
+  state.val[5*y + x]! ^^^
+    ⟨(~~~ (state.val[5*y + (x + 1) % 5]!).bv) &&&
+       (state.val[5*y + (x + 2) % 5]!).bv⟩
+
+/-- Purity of `chi`'s closure. -/
+@[spec]
+theorem chi_closure_call_mut_spec
+    (state : Std.Array Std.U64 25#usize) (k : Std.Usize) (hk : k.val < 25) :
+    ⦃ ⌜ True ⌝ ⦄
+    keccak_f.chi.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+      state k
+    ⦃ ⇓ r => ⌜ r = (chi_closure_at state k.val, state) ⌝ ⦄ := by
+  unfold keccak_f.chi.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+        keccak_f.chi.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
+        chi_closure_at
+  hax_mvcgen
+  all_goals (first
+    | scalar_tac
+    | (simp; scalar_tac)
+    | (congr 1; apply Std.U64.bv_eq_imp_eq
+       simp_all only [Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not,
+         show ((1#usize : Std.Usize).val) = 1 from rfl,
+         show ((2#usize : Std.Usize).val) = 2 from rfl,
+         show ((5#usize : Std.Usize).val) = 5 from rfl]))
+
+/-! ### Function-equality theorems: `keccak_f.X = keccak_f.X_unrolled`
+
+Each non-`_unrolled` hacspec function and its `_unrolled` counterpart are
+shown to produce the same `Result` value by routing both through their
+shared `_applied` form. `keccak_f.X` is proven via `createi_pure_spec` (a
+single `hax_mvcgen` chains through createi → per-closure `[spec]`).
+`keccak_f.X_unrolled` is proven by the existing `*_unrolled_spec` Triples
+in `RoundEquiv.lean` / `PrcLift.lean`.
+
+### Shared closer for the 25-cell array equality
+
+After `hax_mvcgen` recurses through the per-closure `[spec]`s, every
+rho/pi/chi proof reaches the same goal shape:
+
+  `(createi-result).val = (X_applied state).val`
+
+where the LHS is a 25-element `r_a` whose cells satisfy
+`r_a.val[i]! = X_closure_at state i` (the `ha` hypothesis introduced by
+`createi_pure_spec`), and the RHS is `Std.Array.make 25 [..25 cells..]`.
+
+The `close_array25` macro automates this collapse:
+1. `apply Subtype.ext; unfold $applied; simp only [Std.Array.make]`
+2. `rename_i r_a ha`
+3. Specializes `ha` at each of the 25 indices.
+4. Rewrites each `ha_i` via `simp only [$closure, ..extra..]` where
+   `..extra..` is the per-X simp-set (div/mod literals, RHO_OFFSETS, etc.).
+5. Destructs `r_a` to a 25-element list and rewrites each cell using
+   the 25 `ha_i` equalities.
+
+Theta isn't routed through this macro: it has three nested closures and
+chains `hc → hd → ha` rather than a single `ha`. -/
+
+/-- Inner helper: collapses a 25-cell array given that `r_a` and `ha`
+    have already been introduced (e.g. after `rename_i` inside theta).
+    Uses `set_option hygiene false in` so the introduced `ha0..ha24` /
+    `v0..v24` names are visible to the caller's `$tail`. -/
+syntax "close_array25_inner " ident
+    " with " "[" Lean.Parser.Tactic.simpLemma,*,? "]"
+    " then " tacticSeq : tactic
+
+set_option hygiene false in
+macro_rules
+  | `(tactic| close_array25_inner $closure:ident
+              with [ $extra,* ] then $tail:tacticSeq) =>
+    `(tactic|
+    (have ha0  := ha  0 (by decide); have ha1  := ha  1 (by decide)
+     have ha2  := ha  2 (by decide); have ha3  := ha  3 (by decide)
+     have ha4  := ha  4 (by decide); have ha5  := ha  5 (by decide)
+     have ha6  := ha  6 (by decide); have ha7  := ha  7 (by decide)
+     have ha8  := ha  8 (by decide); have ha9  := ha  9 (by decide)
+     have ha10 := ha 10 (by decide); have ha11 := ha 11 (by decide)
+     have ha12 := ha 12 (by decide); have ha13 := ha 13 (by decide)
+     have ha14 := ha 14 (by decide); have ha15 := ha 15 (by decide)
+     have ha16 := ha 16 (by decide); have ha17 := ha 17 (by decide)
+     have ha18 := ha 18 (by decide); have ha19 := ha 19 (by decide)
+     have ha20 := ha 20 (by decide); have ha21 := ha 21 (by decide)
+     have ha22 := ha 22 (by decide); have ha23 := ha 23 (by decide)
+     have ha24 := ha 24 (by decide)
+     simp only [$closure:ident, $extra,*]
+       at ha0 ha1 ha2 ha3 ha4 ha5 ha6 ha7 ha8 ha9
+          ha10 ha11 ha12 ha13 ha14 ha15 ha16 ha17 ha18 ha19
+          ha20 ha21 ha22 ha23 ha24
+     obtain ⟨lst, hlen⟩ := r_a
+     simp only [show ((25#usize : Std.Usize).val) = 25 from rfl] at hlen
+     match lst, hlen with
+     | [v0,v1,v2,v3,v4,v5,v6,v7,v8,v9,v10,v11,v12,v13,v14,
+        v15,v16,v17,v18,v19,v20,v21,v22,v23,v24], _ =>
+       simp only [List.getElem!_cons_zero, List.getElem!_cons_succ]
+         at ha0 ha1 ha2 ha3 ha4 ha5 ha6 ha7 ha8 ha9 ha10 ha11 ha12 ha13
+            ha14 ha15 ha16 ha17 ha18 ha19 ha20 ha21 ha22 ha23 ha24
+       (simp only [ha0, ha1, ha2, ha3, ha4, ha5, ha6, ha7, ha8, ha9,
+         ha10, ha11, ha12, ha13, ha14, ha15, ha16, ha17, ha18, ha19,
+         ha20, ha21, ha22, ha23, ha24])
+       ($tail)))
+
+syntax "close_array25 " ident "," ident
+    " with " "[" Lean.Parser.Tactic.simpLemma,*,? "]"
+    " then " tacticSeq : tactic
+
+set_option hygiene false in
+macro_rules
+  | `(tactic| close_array25 $applied:ident, $closure:ident
+              with [ $extra,* ] then $tail:tacticSeq) =>
+    `(tactic|
+    (apply Subtype.ext
+     unfold $applied
+     simp only [Std.Array.make]
+     rename_i r_a ha
+     close_array25_inner $closure with [$extra,*] then $tail))
+
+
+
 attribute [local irreducible] spread_to_even lift_lane_bv
 
 /-! ## Theta composition (impl side)
@@ -685,6 +1047,119 @@ produces exactly `lift_theta_applied r_impl`. The chain of equalities:
 The substitution from `theta_comp_spec_local`'s 12-conjunct post is
 how we bridge "spec d-cell content" with "impl r.d cell content".
 -/
+
+
+/-! ## Spec-side `@[spec]` for `keccak_f.theta`
+
+Kept here (not in `PrcLift.lean`) so the @[spec] registration only
+applies to files that import `RoundEquiv`. Adding it to `PrcLift.lean`
+caused `prc_lift_spec`'s mvcgen pass to drift past the 128M heartbeat
+cap (HEAD baseline was just under). -/
+
+/-- Pure semantics of `keccak_f.theta` (new `5*y + x` layout):
+    column XOR `c_x = ⊕_y state[5*y + x]`, then
+    `d_x = c_{x-1} ^ rot64(c_{x+1}, 1)`, then `state[k] ^ d_{k%5}`. -/
+def theta_applied (state : Std.Array Std.U64 25#usize) :
+    Std.Array Std.U64 25#usize :=
+  let c0 := state.val[0]!  ^^^ state.val[5]!  ^^^ state.val[10]! ^^^ state.val[15]! ^^^ state.val[20]!
+  let c1 := state.val[1]!  ^^^ state.val[6]!  ^^^ state.val[11]! ^^^ state.val[16]! ^^^ state.val[21]!
+  let c2 := state.val[2]!  ^^^ state.val[7]!  ^^^ state.val[12]! ^^^ state.val[17]! ^^^ state.val[22]!
+  let c3 := state.val[3]!  ^^^ state.val[8]!  ^^^ state.val[13]! ^^^ state.val[18]! ^^^ state.val[23]!
+  let c4 := state.val[4]!  ^^^ state.val[9]!  ^^^ state.val[14]! ^^^ state.val[19]! ^^^ state.val[24]!
+  let d0 : Std.U64 := c4 ^^^ ⟨c1.bv.rotateLeft 1⟩
+  let d1 : Std.U64 := c0 ^^^ ⟨c2.bv.rotateLeft 1⟩
+  let d2 : Std.U64 := c1 ^^^ ⟨c3.bv.rotateLeft 1⟩
+  let d3 : Std.U64 := c2 ^^^ ⟨c4.bv.rotateLeft 1⟩
+  let d4 : Std.U64 := c3 ^^^ ⟨c0.bv.rotateLeft 1⟩
+  Std.Array.make 25#usize [
+    state.val[0]!  ^^^ d0, state.val[1]!  ^^^ d1, state.val[2]!  ^^^ d2,
+    state.val[3]!  ^^^ d3, state.val[4]!  ^^^ d4,
+    state.val[5]!  ^^^ d0, state.val[6]!  ^^^ d1, state.val[7]!  ^^^ d2,
+    state.val[8]!  ^^^ d3, state.val[9]!  ^^^ d4,
+    state.val[10]! ^^^ d0, state.val[11]! ^^^ d1, state.val[12]! ^^^ d2,
+    state.val[13]! ^^^ d3, state.val[14]! ^^^ d4,
+    state.val[15]! ^^^ d0, state.val[16]! ^^^ d1, state.val[17]! ^^^ d2,
+    state.val[18]! ^^^ d3, state.val[19]! ^^^ d4,
+    state.val[20]! ^^^ d0, state.val[21]! ^^^ d1, state.val[22]! ^^^ d2,
+    state.val[23]! ^^^ d3, state.val[24]! ^^^ d4
+  ]
+
+set_option maxHeartbeats 16000000 in
+@[spec]
+theorem theta_spec (state : Std.Array Std.U64 25#usize) :
+    ⦃ ⌜ True ⌝ ⦄ keccak_f.theta state
+    ⦃ ⇓ r => ⌜ r = theta_applied state ⌝ ⦄ := by
+  unfold keccak_f.theta
+  hax_mvcgen
+  case vc1.f => exact theta_closure_c_at state ‹ℕ›
+  case vc4.f => exact theta_closure_1_d_at ‹Std.Array Std.U64 5#usize› ‹ℕ›
+  case vc8 => exact theta_closure_2_at (state, ‹Std.Array Std.U64 5#usize›) ‹ℕ›
+  all_goals first
+    | (rw [usize_bv_ofNat_val _ (by scalar_tac)] at *
+       first | scalar_tac | assumption)
+    | scalar_tac
+    | assumption
+    | (-- vc7: 25-cell array equality
+       apply Subtype.ext
+       unfold theta_applied
+       simp only [Std.Array.make]
+       rename_i r_c hc r_d hd r_a ha
+       have hc0 := hc 0 (by decide); have hc1 := hc 1 (by decide)
+       have hc2 := hc 2 (by decide); have hc3 := hc 3 (by decide)
+       have hc4 := hc 4 (by decide)
+       simp only [theta_closure_c_at,
+         show (5 * 0 : Nat) = 0 from rfl, show (5 * 0 + 1 : Nat) = 1 from rfl,
+         show (5 * 0 + 2 : Nat) = 2 from rfl, show (5 * 0 + 3 : Nat) = 3 from rfl,
+         show (5 * 0 + 4 : Nat) = 4 from rfl,
+         show (5 * 1 : Nat) = 5 from rfl, show (5 * 1 + 1 : Nat) = 6 from rfl,
+         show (5 * 1 + 2 : Nat) = 7 from rfl, show (5 * 1 + 3 : Nat) = 8 from rfl,
+         show (5 * 1 + 4 : Nat) = 9 from rfl,
+         show (5 * 2 : Nat) = 10 from rfl, show (5 * 2 + 1 : Nat) = 11 from rfl,
+         show (5 * 2 + 2 : Nat) = 12 from rfl, show (5 * 2 + 3 : Nat) = 13 from rfl,
+         show (5 * 2 + 4 : Nat) = 14 from rfl,
+         show (5 * 3 : Nat) = 15 from rfl, show (5 * 3 + 1 : Nat) = 16 from rfl,
+         show (5 * 3 + 2 : Nat) = 17 from rfl, show (5 * 3 + 3 : Nat) = 18 from rfl,
+         show (5 * 3 + 4 : Nat) = 19 from rfl,
+         show (5 * 4 : Nat) = 20 from rfl, show (5 * 4 + 1 : Nat) = 21 from rfl,
+         show (5 * 4 + 2 : Nat) = 22 from rfl, show (5 * 4 + 3 : Nat) = 23 from rfl,
+         show (5 * 4 + 4 : Nat) = 24 from rfl] at hc0 hc1 hc2 hc3 hc4
+       have hd0 := hd 0 (by decide); have hd1 := hd 1 (by decide)
+       have hd2 := hd 2 (by decide); have hd3 := hd 3 (by decide)
+       have hd4 := hd 4 (by decide)
+       simp only [theta_closure_1_d_at, hc0, hc1, hc2, hc3, hc4,
+         show (0 + 4) % 5 = 4 from rfl, show (0 + 1) % 5 = 1 from rfl,
+         show (1 + 4) % 5 = 0 from rfl, show (1 + 1) % 5 = 2 from rfl,
+         show (2 + 4) % 5 = 1 from rfl, show (2 + 1) % 5 = 3 from rfl,
+         show (3 + 4) % 5 = 2 from rfl, show (3 + 1) % 5 = 4 from rfl,
+         show (4 + 4) % 5 = 3 from rfl, show (4 + 1) % 5 = 0 from rfl] at hd0 hd1 hd2 hd3 hd4
+       close_array25_inner theta_closure_2_at with [
+         show (0:Nat) % 5 = 0 from rfl,
+         show (1:Nat) % 5 = 1 from rfl,
+         show (2:Nat) % 5 = 2 from rfl,
+         show (3:Nat) % 5 = 3 from rfl,
+         show (4:Nat) % 5 = 4 from rfl,
+         show (5:Nat) % 5 = 0 from rfl,
+         show (6:Nat) % 5 = 1 from rfl,
+         show (7:Nat) % 5 = 2 from rfl,
+         show (8:Nat) % 5 = 3 from rfl,
+         show (9:Nat) % 5 = 4 from rfl,
+         show (10:Nat) % 5 = 0 from rfl,
+         show (11:Nat) % 5 = 1 from rfl,
+         show (12:Nat) % 5 = 2 from rfl,
+         show (13:Nat) % 5 = 3 from rfl,
+         show (14:Nat) % 5 = 4 from rfl,
+         show (15:Nat) % 5 = 0 from rfl,
+         show (16:Nat) % 5 = 1 from rfl,
+         show (17:Nat) % 5 = 2 from rfl,
+         show (18:Nat) % 5 = 3 from rfl,
+         show (19:Nat) % 5 = 4 from rfl,
+         show (20:Nat) % 5 = 0 from rfl,
+         show (21:Nat) % 5 = 1 from rfl,
+         show (22:Nat) % 5 = 2 from rfl,
+         show (23:Nat) % 5 = 3 from rfl,
+         show (24:Nat) % 5 = 4 from rfl,
+         hd0, hd1, hd2, hd3, hd4]
+         then skip)
 
 
 end libcrux_iot_sha3.Foundation

@@ -638,11 +638,11 @@ theorem prc_lift_spec_3 (s : state.KeccakState) (hi_lt : s.i.val < 24) :
     (do let r1 ← keccak.keccakf1600_round3_pi_rho_chi_1 0#usize s
         keccak.keccakf1600_round3_pi_rho_chi_2 r1)
     ⦃ ⇓ r_impl => ⌜
-      (do let a1 ← keccak_f.rho_unrolled
+      (do let a1 ← keccak_f.rho
             (lift_theta_applied_perm s
               (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3))
-          let a2 ← keccak_f.pi_unrolled a1
-          let a3 ← keccak_f.chi_unrolled a2
+          let a2 ← keccak_f.pi a1
+          let a3 ← keccak_f.chi a2
           let r_spec ← keccak_f.iota a3 s.i
           pure (r_spec = Foundation.lift r_impl)).holds ⌝ ⦄ := by
   unfold keccak.keccakf1600_round3_pi_rho_chi_1

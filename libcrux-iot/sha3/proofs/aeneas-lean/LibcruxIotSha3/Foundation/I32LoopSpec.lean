@@ -26,14 +26,8 @@ When each call_mut's purity is stated as a Triple (natural for
 `createi_pure_eq` follows directly. Used both here (in this file's
 loop-spec helpers) and externally (in `HacspecBridge.lean`). -/
 
-theorem result_eq_of_triple {α : Type} {x : Result α} {v : α}
-    (h : ⦃ ⌜ True ⌝ ⦄ x ⦃ ⇓ r => ⌜ r = v ⌝ ⦄) : x = .ok v := by
-  match hx : x, h with
-  | .ok v', h =>
-      have hv' : v' = v := by simpa [Triple, WP.wp] using h
-      rw [hv']
-  | .fail e, h => exact absurd h (by simp [Triple, WP.wp])
-  | .div, h => exact absurd h (by simp [Triple, WP.wp])
+-- `result_eq_of_triple` is now defined in `Lift.lean` (lower in the import
+-- chain). Re-exported here only via transitive import.
 
 /-! ## I32 iterator-next spec
 

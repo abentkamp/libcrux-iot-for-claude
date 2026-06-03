@@ -37,7 +37,7 @@
 import LibcruxIotSha3.Extraction.Funs
 import Std.Tactic.BVDecide
 
-open Aeneas Aeneas.Std
+open Aeneas Aeneas.Std Std.Do
 
 namespace libcrux_iot_sha3.Foundation
 
@@ -403,5 +403,18 @@ theorem usize_bv_ofNat_val (k : Nat) (h : k < 2^Std.UScalarTy.Usize.numBits) :
   show (BitVec.ofNat _ k).toNat = k
   rw [BitVec.toNat_ofNat]
   exact Nat.mod_eq_of_lt h
+
+/-- From a Triple with trivial pre, success post, and value-equality post,
+    derive the underlying `Result` equation `x = .ok v`. Useful to close
+    `keccak_f.X state = .ok (X_applied state)` after `hax_mvcgen` has
+    produced the corresponding Triple. -/
+theorem result_eq_of_triple {α : Type} {x : Std.Result α} {v : α}
+    (h : ⦃ ⌜ True ⌝ ⦄ x ⦃ ⇓ r => ⌜ r = v ⌝ ⦄) : x = .ok v := by
+  match hx : x, h with
+  | .ok v', h =>
+      have hv' : v' = v := by simpa [Triple, WP.wp] using h
+      rw [hv']
+  | .fail e, h => exact absurd h (by simp [Triple, WP.wp])
+  | .div, h => exact absurd h (by simp [Triple, WP.wp])
 
 end libcrux_iot_sha3.Foundation

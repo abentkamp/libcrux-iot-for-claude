@@ -291,7 +291,29 @@ theorem bit_round0_alg_eq (s : KState) (hi : s.i.val < 24) :
   unfold round0_post at h_round0_post
   have h_spec_eq : spec_round_step (Foundation.lift s.toAeneas) s.toAeneas.i
                  = .ok (lift_perm r impl_perm impl_swap) := by
+    -- Use `theta_spec`, `rho_spec`, `pi_spec`, `chi_spec` and the `iota` def
+    -- to drive `spec_round_step` to `.ok`, then `holds_chain_eq_ok` on the
+    -- final pure-eq form.
     unfold spec_round_step
+    rw [result_eq_of_triple (theta_spec _)]
+    simp only [bind_tc_ok]
+    rw [result_eq_of_triple (rho_spec _)]
+    simp only [bind_tc_ok]
+    rw [result_eq_of_triple (pi_spec _)]
+    simp only [bind_tc_ok]
+    rw [result_eq_of_triple (chi_spec _)]
+    simp only [bind_tc_ok]
+    -- Now goal: `keccak_f.iota (chi_applied (pi_applied (rho_applied (theta_applied (lift s))))) s.i = .ok ...`
+    -- The hypothesis h_round0_post is the same chain wrapped with `pure (r_spec = X)`.
+    -- Apply the same rewrites on h_round0_post and extract via holds_chain_eq_ok.
+    rw [result_eq_of_triple (theta_spec _)] at h_round0_post
+    simp only [bind_tc_ok] at h_round0_post
+    rw [result_eq_of_triple (rho_spec _)] at h_round0_post
+    simp only [bind_tc_ok] at h_round0_post
+    rw [result_eq_of_triple (pi_spec _)] at h_round0_post
+    simp only [bind_tc_ok] at h_round0_post
+    rw [result_eq_of_triple (chi_spec _)] at h_round0_post
+    simp only [bind_tc_ok] at h_round0_post
     exact holds_chain_eq_ok h_round0_post
   show spec_round_step (Foundation.lift s.toAeneas) s.i
      = .ok (lift_perm (bit_round0 s).toAeneas impl_perm impl_swap)
@@ -343,6 +365,18 @@ theorem bit_round1_alg_eq (s : KState) (hi : s.i.val < 24) :
   have h_spec_eq : spec_round_step (lift_perm s.toAeneas impl_perm (impl_swap_k 1)) s.toAeneas.i
                  = .ok (lift_perm r (impl_perm ∘ impl_perm) (impl_swap_k 2)) := by
     unfold spec_round_step
+    rw [result_eq_of_triple (theta_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (rho_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (pi_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (chi_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (theta_spec _)] at h_round1_post
+    simp only [bind_tc_ok] at h_round1_post
+    rw [result_eq_of_triple (rho_spec _)] at h_round1_post
+    simp only [bind_tc_ok] at h_round1_post
+    rw [result_eq_of_triple (pi_spec _)] at h_round1_post
+    simp only [bind_tc_ok] at h_round1_post
+    rw [result_eq_of_triple (chi_spec _)] at h_round1_post
+    simp only [bind_tc_ok] at h_round1_post
     exact holds_chain_eq_ok h_round1_post
   show spec_round_step (lift_perm s.toAeneas impl_perm (impl_swap_k 1)) s.i
      = .ok (lift_perm (bit_round1 s).toAeneas (impl_perm ∘ impl_perm) (impl_swap_k 2))
@@ -397,6 +431,18 @@ theorem bit_round2_alg_eq (s : KState) (hi : s.i.val < 24) :
       spec_round_step (lift_perm s.toAeneas (impl_perm ∘ impl_perm) (impl_swap_k 2)) s.toAeneas.i
         = .ok (lift_perm r (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) := by
     unfold spec_round_step
+    rw [result_eq_of_triple (theta_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (rho_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (pi_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (chi_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (theta_spec _)] at h_round2_post
+    simp only [bind_tc_ok] at h_round2_post
+    rw [result_eq_of_triple (rho_spec _)] at h_round2_post
+    simp only [bind_tc_ok] at h_round2_post
+    rw [result_eq_of_triple (pi_spec _)] at h_round2_post
+    simp only [bind_tc_ok] at h_round2_post
+    rw [result_eq_of_triple (chi_spec _)] at h_round2_post
+    simp only [bind_tc_ok] at h_round2_post
     exact holds_chain_eq_ok h_round2_post
   show spec_round_step (lift_perm s.toAeneas (impl_perm ∘ impl_perm) (impl_swap_k 2)) s.i
      = .ok (lift_perm (bit_round2 s).toAeneas (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3))
@@ -452,6 +498,18 @@ theorem bit_round3_alg_eq (s : KState) (hi : s.i.val < 24) :
           (lift_perm s.toAeneas (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) s.toAeneas.i
         = .ok (Foundation.lift r) := by
     unfold spec_round_step
+    rw [result_eq_of_triple (theta_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (rho_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (pi_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (chi_spec _)]; simp only [bind_tc_ok]
+    rw [result_eq_of_triple (theta_spec _)] at h_round3_post
+    simp only [bind_tc_ok] at h_round3_post
+    rw [result_eq_of_triple (rho_spec _)] at h_round3_post
+    simp only [bind_tc_ok] at h_round3_post
+    rw [result_eq_of_triple (pi_spec _)] at h_round3_post
+    simp only [bind_tc_ok] at h_round3_post
+    rw [result_eq_of_triple (chi_spec _)] at h_round3_post
+    simp only [bind_tc_ok] at h_round3_post
     exact holds_chain_eq_ok h_round3_post
   show spec_round_step
           (lift_perm s.toAeneas (impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 3)) s.i

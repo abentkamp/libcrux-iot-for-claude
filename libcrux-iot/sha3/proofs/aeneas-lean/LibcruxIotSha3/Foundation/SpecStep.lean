@@ -30,10 +30,10 @@ about iterating it. -/
 
 def spec_round_step (state : Std.Array Std.U64 25#usize) (round : Std.Usize) :
     Result (Std.Array Std.U64 25#usize) := do
-  let s_theta ← keccak_f.theta_unrolled state
-  let s_rho ← keccak_f.rho_unrolled s_theta
-  let s_pi ← keccak_f.pi_unrolled s_rho
-  let s_chi ← keccak_f.chi_unrolled s_pi
+  let s_theta ← keccak_f.theta state
+  let s_rho ← keccak_f.rho s_theta
+  let s_pi ← keccak_f.pi s_rho
+  let s_chi ← keccak_f.chi s_pi
   keccak_f.iota s_chi round
 
 /-- Convert a `Nat` ≤ 24 to `Std.Usize`. Used in `keccakf1600_post_canonical`
