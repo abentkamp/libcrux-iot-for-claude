@@ -3,7 +3,10 @@
 This directory contains the Lean 4 proof that the IOT-friendly
 implementation of SHA-3 in `libcrux-iot/sha3/src/` computes
 the same function as the hacspec-style FIPS-202 specification in
-`specs/sha3/src/`. Both sides are extracted from Rust into Lean
+the `hacspec_sha3` crate (from
+[`cryspen/libcrux`](https://github.com/cryspen/libcrux), branch
+`sha3-spec-upstream-with-iot`, `specs/sha3/`). Both sides are
+extracted from Rust into Lean
 via the `cargo hax into aeneas-lean` pipeline. Most of the verification
 code is AI-generated.
 
@@ -165,12 +168,14 @@ and proceeds as follows:
 
 ## Extraction pipeline
 
-The specification and the implementation are extracted separately, 
+The specification and the implementation are extracted separately,
 using the python scripts [`libcrux-iot/sha3/hax_aeneas.py`](../../../../sha3/hax_aeneas.py) and
-[`specs/sha3/hax_aeneas.py`](../../../../../specs/sha3/hax_aeneas.py). Internally, these scripts
+the corresponding `specs/sha3/hax_aeneas.py` in the upstream
+[`cryspen/libcrux`](https://github.com/cryspen/libcrux) repo
+(branch `sha3-spec-upstream-with-iot`). Internally, these scripts
 call `cargo hax into aeneas-lean` and apply small fixes to the output.
 The resulting Lean files are:
-* [`specs/sha3/proofs/aeneas-lean/HacspecSha3/Extraction/Funs.lean`](../../../../../specs/sha3/proofs/aeneas-lean/HacspecSha3/Extraction/Funs.lean)
+* `specs/sha3/proofs/aeneas-lean/HacspecSha3/Extraction/Funs.lean` (in `cryspen/libcrux`)
 * [`libcrux-iot/sha3/proofs/aeneas-lean/LibcruxIotSha3/Extraction/Funs.lean`](Extraction/Funs.lean)
 
 ## Reproduction
@@ -209,9 +214,10 @@ the Rust level, before they propagate into Lean proof failures.
 ### Extraction from Rust into Lean
 
 ```bash
-# Spec side:
+# Spec side (from a checkout of cryspen/libcrux,
+# branch sha3-spec-upstream-with-iot):
 cd specs/sha3/
-/hax_aeneas.py
+./hax_aeneas.py
 
 # Impl side:
 cd libcrux-iot/sha3/
