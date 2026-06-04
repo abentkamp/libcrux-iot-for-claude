@@ -36,8 +36,8 @@ private theorem triple_noThrow_exists_ok_local {α : Type} {x : Result α}
     (h : ⦃ ⌜ True ⌝ ⦄ x ⦃ PostCond.noThrow Q ⦄) : ∃ v, x = .ok v := by
   match x, h with
   | .ok v, _ => exact ⟨v, rfl⟩
-  | .fail _, h => exact absurd h (by simp [Triple, WP.wp])
-  | .div, h => exact absurd h (by simp [Triple, WP.wp])
+  | .fail _, h => exact absurd h (by simp [Triple, WP.wp, PredTrans.apply])
+  | .div, h => exact absurd h (by simp [Triple, WP.wp, PredTrans.apply])
 
 /-- If `x = .ok v` and `Triple ⦃ True ⦄ x ⦃ noThrow Q ⦄`, then `Q v`
     holds. -/
@@ -45,14 +45,14 @@ private theorem triple_noThrow_elim_local {α : Type} {x : Result α}
     {Q : α → Assertion ResultPSU}
     (h : ⦃ ⌜ True ⌝ ⦄ x ⦃ PostCond.noThrow Q ⦄) {v : α} (hv : x = .ok v) :
     (Q v).down := by
-  subst hv; simpa [Triple, WP.wp] using h
+  subst hv; simpa [Triple, WP.wp, PredTrans.apply] using h
 
 /-- If `x = .ok v` and we have `P v`, repackage as a Triple with a
     `pure-prop` post. -/
 private theorem triple_of_ok_local {α : Type} {x : Result α} {v : α}
     {P : α → Prop} (hx : x = .ok v) (hp : P v) :
     ⦃ ⌜ True ⌝ ⦄ x ⦃ ⇓ r => ⌜ P r ⌝ ⦄ := by
-  subst hx; simp [Triple, WP.wp, hp]
+  subst hx; simp [Triple, WP.wp, PredTrans.apply, hp]
 
 /-- Any successful `keccak.keccakf1600` execution sets `i := 0#usize` in
     its output state. This is by construction: the impl body ends with
@@ -94,20 +94,9 @@ theorem keccakf1600_seal_spec (s : state.KeccakState) (h_i : s.i.val = 0) :
               ∧ r.i.val = 0 ⌝ ⦄ := by
   -- Convert the `.val` form of `h_i` to the bit-vector form Bridge 1 expects.
   have h_i' : s.i = 0#usize := Std.UScalar.eq_of_val_eq (by simpa using h_i)
-  -- Bridge 1 gives the spec-equality half of the post.
-  have h_bridge :=
-    Composition.keccakf1600_equiv_hacspec s h_i'
-  -- Extract the underlying Result equation `keccak.keccakf1600 s = .ok r0`.
-  obtain ⟨r0, h_ok⟩ := triple_noThrow_exists_ok_local h_bridge
-  -- Bridge 1's post evaluated at `r0`: spec-equality half.
-  have h_spec : keccak_f.keccak_f (Foundation.lift s) = .ok (Foundation.lift r0) :=
-    triple_noThrow_elim_local h_bridge h_ok
-  -- Body-derived fact: `r0.i = 0#usize` ⇒ `r0.i.val = 0`.
-  have h_r0_i : r0.i = 0#usize := keccakf1600_i_zero_of_ok h_ok
-  have h_r0_val : r0.i.val = 0 := by
-    rw [h_r0_i]; rfl
-  -- Repackage as a Triple with the conjoined post.
-  exact triple_of_ok_local h_ok ⟨h_spec, h_r0_val⟩
+  -- TODO(new-aeneas): depends on `Composition.keccakf1600_equiv_hacspec`
+  -- in `HacspecBridge.lean`, which is currently stubbed via `#exit`.
+  sorry
 
 /-! Seal: from here on, no proof in `Sponge/` may unfold either side of
     Bridge 1. Importing files inherit `local irreducible` for these
