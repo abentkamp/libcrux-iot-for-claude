@@ -30,14 +30,14 @@ set_option linter.unusedVariables false
 `Nat.fold 24` chain in `keccakf1600_loop_post` / `keccakf1600_post_canonical`.
 `spec_chain` packages the `Nat.fold` form. -/
 
-noncomputable def spec_round_step_at (round_idx : Nat) (st : Std.Array Std.U64 25#usize) :
+def spec_round_step_at (round_idx : Nat) (st : Std.Array Std.U64 25#usize) :
     Result (Std.Array Std.U64 25#usize) :=
   if h : round_idx < 24 then spec_round_step st (roundOfNat round_idx (by omega))
   else .fail .panic
 
 /-- `spec_chain n s_lift` applies `n` spec rounds (indices 0..n-1) to
     the lifted initial state `s_lift`. -/
-noncomputable def spec_chain (s_lift : Std.Array Std.U64 25#usize) (n : Nat) :
+def spec_chain (s_lift : Std.Array Std.U64 25#usize) (n : Nat) :
     Result (Std.Array Std.U64 25#usize) :=
   Nat.fold n (fun i _ acc => acc >>= fun st => spec_round_step_at i st) (pure s_lift)
 

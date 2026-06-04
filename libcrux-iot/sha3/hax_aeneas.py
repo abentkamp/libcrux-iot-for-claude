@@ -6,8 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-HAX_VERSION = "c1ba7b8f4bead612ff24952b57abeb902b288718"
-AENEAS_VERSION = "unknown"
+HAX_VERSION = "7b4bd97058e0fcbf9135b76297ca91942f2327a6"
+AENEAS_VERSION = "b5c45e84"
 
 
 def check_version(cmd: list[str], name: str, expected: str) -> None:
@@ -22,7 +22,7 @@ check_version(["cargo", "hax", "--version"], "hax", HAX_VERSION)
 check_version(["aeneas", "-version"], "aeneas", AENEAS_VERSION)
 
 result = subprocess.run(
-    ["cargo", "hax", "into", "aeneas-lean", '--aeneas-args="-split-files"'],
+    ["cargo", "hax", "into", "aeneas-lean"],
     env={**os.environ, "RUSTFLAGS": "--cfg hax_backend_lean"},
     capture_output=True,
     text=True,
@@ -43,12 +43,53 @@ for line in result.stderr.splitlines():
 if result.returncode != 0:
     sys.exit(result.returncode)
 
-funs_lean = Path("proofs/aeneas-lean/LibcruxIotSha3/Extraction/Funs.lean")
-content = funs_lean.read_text()
+funs_lean = "proofs/aeneas-lean/LibcruxIotSha3/Extraction/Funs.lean"
+with open(funs_lean) as f:
+    content = f.read()
 
-# Aeneas generates `import LibcruxIotSha3.{Types,FunsExternal}`, but the files
-# actually live in the `Extraction/` subdirectory. Fix the import paths.
-content = content.replace("import LibcruxIotSha3.Types", "import LibcruxIotSha3.Extraction.Types")
-content = content.replace("import LibcruxIotSha3.FunsExternal", "import LibcruxIotSha3.Extraction.FunsExternal")
+content = content.replace(
+    "import Aeneas",
+    "import Aeneas\nimport LibcruxIotSha3.Extraction.Missing\nopen core_models",
+    1,
+)
 
-funs_lean.write_text(content)
+# This definition is hitting the recursion limit:
+content = content.replace(
+    "/-- [libcrux_iot_sha3::keccak::RC_INTERLEAVED_1]",
+    "set_option maxRecDepth 1000 in\n/-- [libcrux_iot_sha3::keccak::RC_INTERLEAVED_1]",
+    1,
+)
+
+# This definition is hitting the recursion limit:
+content = content.replace(
+    "/-- [libcrux_iot_sha3::keccak::RC_INTERLEAVED_0]",
+    "set_option maxRecDepth 1000 in\n/-- [libcrux_iot_sha3::keccak::RC_INTERLEAVED_0]",
+    1,
+)
+
+# Wrong signature of `core_models.fmt.rt.Argument.new_display`
+block = (
+    "    let a ←\n"
+    "      core_models.fmt.rt.Argument.new_display\n"
+    "        core_models.Usize.Insts.Core_modelsFmtDisplay i\n"
+    "    let a1 ←\n"
+    "      core_models.fmt.rt.Argument.new_display\n"
+    "        core_models.Usize.Insts.Core_modelsFmtDisplay RATE\n"
+    "    let _ ←\n"
+    "      core_models.fmt.Arguments.new\n"
+    "        (Array.make 7#usize [\n"
+    "          192#u8, 3#u8, 32#u8, 62#u8, 32#u8, 192#u8, 0#u8\n"
+    "          ]) (Array.make 2#usize [ a, a1 ])"
+)
+content = content.replace(block, "/-\n" + block + "\n-/", 1)
+
+# Wrong field name in `core_models.fmt.Debug`
+content = content.replace(
+    "  fmt := ",
+    "  dbg_fmt := ",
+    1,
+)
+
+
+with open(funs_lean, "w") as f:
+    f.write(content)

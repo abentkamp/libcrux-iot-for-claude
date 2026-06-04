@@ -146,8 +146,16 @@ private theorem theta_d_spec_3 (s : state.KeccakState) :
           s.c.val[3]!.val[0]! ^^^ rot32 s.c.val[0]!.val[1]! 1 ∧
         r.d.val[4]!.val[1]! =
           s.c.val[3]!.val[1]! ^^^ s.c.val[0]!.val[0]! ⌝ ⦄ := by
-  -- TODO(new-aeneas): see theta_d TODO in ThetaLiftDefs.lean
-  sorry
+  unfold keccak.keccakf1600_round3_theta_d
+  hax_mvcgen
+  all_goals first
+    | scalar_tac
+    | trivial
+    | (refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+       all_goals first | trivial | assumption | (
+         simp only [Std.WP.predn] at *
+         try apply Std.U32.bv_eq_imp_eq
+         simp_all [Std.UScalar.bv_xor, rot32]))
 
 set_option maxHeartbeats 4000000 in
 theorem theta_comp_spec_local_3 (s : state.KeccakState) :

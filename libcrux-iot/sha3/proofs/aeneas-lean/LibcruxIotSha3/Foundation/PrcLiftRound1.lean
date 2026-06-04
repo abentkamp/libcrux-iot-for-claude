@@ -54,8 +54,31 @@ private theorem pi_rho_chi_y0_zeta0_spec_fc_1
         (bx2 ^^^ ((~~~bx3) &&& bx4))
         (bx3 ^^^ ((~~~bx4) &&& bx0))
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
-  -- TODO(new-aeneas): see PrcLift macro TODOs.
-  sorry
+  unfold keccak.keccakf1600_round1_pi_rho_chi_y0_zeta0
+  hax_mvcgen
+  all_goals try scalar_tac
+  expose_names
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact h_60.trans (h_53.trans (h_46.trans (h_39.trans h_32)))
+  · exact h_59.trans (h_52.trans (h_45.trans (h_38.trans h_31)))
+  · exact h_58.trans (h_51.trans (h_44.trans (h_37.trans h_30)))
+  · rw [h_61, h_54, h_47, h_40, h_33]
+    norm_num [apply_5_writes]
+    congr 6
+    all_goals apply Std.U32.bv_eq_imp_eq
+    all_goals (
+      simp only [
+        h_29.2, h_27.2, h_26.2, h_25,
+        h_36.2, h_35.2, h_34,
+        h_43.2, h_42.2, h_41,
+        h_50.2, h_49.2, h_48,
+        h_57.2, h_56.2, h_55,
+        h_7, h_9, h_20, h_22, h_24,
+        h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+        h_28,
+        h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+        Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, rot32]
+      norm_num)
 
 /-! y0_zeta1 FC (round 1): writes lanes 0/8/11/19/22 at halves 1/0/0/0/0;
     RC_INTERLEAVED_1[s.i] XORed into lane 0 half 1; INCREMENTS `s.i`. -/
@@ -79,8 +102,36 @@ private theorem pi_rho_chi_y0_zeta1_spec_fc_1
         (bx2 ^^^ ((~~~bx3) &&& bx4))
         (bx3 ^^^ ((~~~bx4) &&& bx0))
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
-  -- TODO(new-aeneas): see PrcLift macro TODOs.
-  sorry
+  unfold keccak.keccakf1600_round1_pi_rho_chi_y0_zeta1
+  hax_mvcgen
+  all_goals try scalar_tac
+  expose_names
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- r.d = s.d
+    exact h_61.trans (h_54.trans (h_47.trans (h_40.trans h_33)))
+  · -- r.c = s.c
+    exact h_60.trans (h_53.trans (h_46.trans (h_39.trans h_32)))
+  · -- ↑r.i = ↑s.i + 1
+    rw [h_59, h_52, h_45, h_38, h_31, h_30]
+    rfl
+  · -- val-eq
+    rw [h_62, h_55, h_48, h_41, h_34]
+    norm_num [apply_5_writes]
+    congr 6
+    all_goals apply Std.U32.bv_eq_imp_eq
+    all_goals (
+      simp only [
+        h_29.2, h_27.2, h_26.2, h_25,
+        h_37.2, h_36.2, h_35,
+        h_44.2, h_43.2, h_42,
+        h_51.2, h_50.2, h_49,
+        h_58.2, h_57.2, h_56,
+        h_7, h_9, h_20, h_22, h_24,
+        h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+        h_28,
+        h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+        Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, rot32]
+      norm_num)
 
 /-! y1_zeta0 FC (round 1): writes lanes 4/7/10/18/21 at halves 1/1/1/1/0;
     preserves `s.i`. -/
@@ -588,6 +639,73 @@ theorem prc_lift_spec_1 (s : state.KeccakState) (hi_lt : s.i.val < 24) :
           let a3 ← keccak_f.chi a2
           let r_spec ← keccak_f.iota a3 s.i
           pure (r_spec = lift_perm r_impl (impl_perm ∘ impl_perm) (impl_swap_k 2))).holds ⌝ ⦄ := by
-  -- TODO(new-aeneas): see prc_lift_spec TODO in PrcLift.lean
-  sorry
+  unfold keccak.keccakf1600_round1_pi_rho_chi_1
+  unfold keccak.keccakf1600_round1_pi_rho_chi_2
+  hax_mvcgen
+  all_goals try scalar_tac
+  subst_vars
+  rw [prc_spec_eq_composed]
+  casesm* _ ∧ _
+  rename_i r9 r8 r7 r6 r5 r4 r3 r2 r1 r' hd hc hi h_chain
+    l26 l25 l24 l23 l22 l21 l20 l19 l18 l17 l16 l15 l14 l13 l12 l11 l10 l9 l8
+    h_FC9 l7 h_FC8 l6 h_FC7 l5 h_FC6 l4 h_FC5 l3 h_FC4 l2 h_FC3 l1 h_FC2 l_last h_FC1
+  simp only [l_last, l1, l2, l3, l4, l5, l6, l7, l8, l9, l10, l11, l12, l13, l14, l15, l16, l17,
+    l18, l19, l20, l21, l22, l23, l24, l25, l26]
+    at h_chain h_FC1 h_FC2 h_FC3 h_FC4 h_FC5 h_FC6 h_FC7 h_FC8 h_FC9
+  have hr'  : (↑r'.st : List lane.Lane2U32).length = 25  := by exact r'.st.2
+  have hr1  : (↑r1.st : List lane.Lane2U32).length = 25  := by exact r1.st.2
+  have hr2  : (↑r2.st : List lane.Lane2U32).length = 25  := by exact r2.st.2
+  have hr3  : (↑r3.st : List lane.Lane2U32).length = 25  := by exact r3.st.2
+  have hr4  : (↑r4.st : List lane.Lane2U32).length = 25  := by exact r4.st.2
+  have hr5  : (↑r5.st : List lane.Lane2U32).length = 25  := by exact r5.st.2
+  have hr6  : (↑r6.st : List lane.Lane2U32).length = 25  := by exact r6.st.2
+  have hr7  : (↑r7.st : List lane.Lane2U32).length = 25  := by exact r7.st.2
+  have hr8  : (↑r8.st : List lane.Lane2U32).length = 25  := by exact r8.st.2
+  have hr9  : (↑r9.st : List lane.Lane2U32).length = 25  := by exact r9.st.2
+  have hss  : (↑s.st  : List lane.Lane2U32).length = 25  := by exact s.st.2
+  have hlane : ∀ (L : lane.Lane2U32), L.val.length = 2 := fun L => L.2
+  apply Subtype.ext
+  unfold prc_spec lift_perm transpose_perm
+  conv_rhs =>
+    rw [show (impl_swap_k 2) = (fun L : Fin 25 =>
+      decide (L.val ∉ ([0, 9, 13, 17, 21] : List Nat))) from by
+      funext L; rw [impl_swap_k]]
+    unfold impl_perm lift_lane_maybe_swap
+  simp (config := { decide := true }) only [Std.Array.make, List.ofFn_succ, List.ofFn_zero,
+    Function.comp_apply,
+    Fin.val_succ, Fin.val_zero, Nat.succ_eq_add_one, Nat.zero_add, Nat.reduceAdd, Nat.reduceMul,
+    Nat.reduceDiv, Nat.reduceMod, reduceIte]
+  repeat' (first | rfl | (apply List.cons_eq_cons.mpr; refine ⟨?_, ?_⟩))
+  all_goals (
+    apply Std.U64.bv_eq_imp_eq
+    simp (config := { decide := true }) only
+      [h_chain, h_FC1, h_FC2, h_FC3, h_FC4, h_FC5, h_FC6, h_FC7, h_FC8, h_FC9, apply_5_writes,
+       lift_lane,
+       List.getElem!_set_ne, List.getElem!_set, List.length_set,
+       Std.Array.set_val_eq, hlane,
+       hr', hr1, hr2, hr3, hr4, hr5, hr6, hr7, hr8, hr9, hss,
+       show ((0#usize : Std.Usize) : Nat) = 0 from rfl,
+       show ((1#usize : Std.Usize) : Nat) = 1 from rfl]
+    simp only [lift_theta_applied_perm_bv_0_1, lift_theta_applied_perm_bv_1_1,
+      lift_theta_applied_perm_bv_2_1, lift_theta_applied_perm_bv_3_1,
+      lift_theta_applied_perm_bv_4_1, lift_theta_applied_perm_bv_5_1,
+      lift_theta_applied_perm_bv_6_1, lift_theta_applied_perm_bv_7_1,
+      lift_theta_applied_perm_bv_8_1, lift_theta_applied_perm_bv_9_1,
+      lift_theta_applied_perm_bv_10_1, lift_theta_applied_perm_bv_11_1,
+      lift_theta_applied_perm_bv_12_1, lift_theta_applied_perm_bv_13_1,
+      lift_theta_applied_perm_bv_14_1, lift_theta_applied_perm_bv_15_1,
+      lift_theta_applied_perm_bv_16_1, lift_theta_applied_perm_bv_17_1,
+      lift_theta_applied_perm_bv_18_1, lift_theta_applied_perm_bv_19_1,
+      lift_theta_applied_perm_bv_20_1, lift_theta_applied_perm_bv_21_1,
+      lift_theta_applied_perm_bv_22_1, lift_theta_applied_perm_bv_23_1,
+      lift_theta_applied_perm_bv_24_1,
+      Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, rot32, rot64]
+    simp only [Std.UScalarTy.U64_numBits_eq,
+      rot_0, rot_1, rot_2, rot_3, rot_6, rot_8, rot_10,
+      rot_14, rot_15, rot_18, rot_20, rot_21, rot_25, rot_27,
+      rot_28, rot_36, rot_39, rot_41, rot_43, rot_44, rot_45,
+      rot_55, rot_56, rot_61, rot_62,
+      ← lift_xor, ← lift_and, ← lift_not, ← lift_chi,
+      ← rc_equiv _ hi_lt])
+
 end libcrux_iot_sha3.Foundation

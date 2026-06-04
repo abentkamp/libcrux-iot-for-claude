@@ -717,9 +717,23 @@ both end with the same `set_lane_value`). -/
    the c-cell. Hygiene disabled so the `rename_i`-introduced names
    (`r`, `hst`, `hi_eq`, `hd`, `hc`) and the theorem's outer `s` resolve
    against the runtime context. -/
--- TODO(new-aeneas): the post-`hax_mvcgen` hypothesis layout has changed;
--- `rename_i r hst hi_eq hd hc` no longer matches. Stubbed.
-local macro "round1_theta_c_proof" _subfun:ident : tactic => `(tactic| sorry)
+set_option hygiene false in
+local macro "round1_theta_c_proof" subfun:ident : tactic => `(tactic|
+  (unfold $subfun
+   hax_mvcgen
+   all_goals try scalar_tac
+   rename_i r hst hi_eq hd hc
+   refine KState.mk.injEq .. |>.mpr ⟨?_, ?_, ?_, ?_⟩
+   · show stateArray25FromAeneas r.st = stateArray25FromAeneas s.st
+     rw [hst]
+   · apply Vector.toArray_inj.mp
+     simp [stateArray5FromAeneas, hc, List.map_set,
+       Lane.fromAeneas_set_zeta0, Lane.fromAeneas_set_zeta1, KState.fromAeneas,
+       stateArray25FromAeneas_getElem, Std.UScalar.bv_xor, *]
+   · show stateArray5FromAeneas r.d = stateArray5FromAeneas s.d
+     rw [hd]
+   · show r.i = s.i
+     exact hi_eq))
 
 set_option maxHeartbeats 4000000 in
 @[spec high]
@@ -845,8 +859,16 @@ private theorem round1_theta_d_spec_fc (s : state.KeccakState) :
           s.c.val[3]!.val[0]! ^^^ Foundation.rot32 s.c.val[0]!.val[1]! 1 ∧
         r.d.val[4]!.val[1]! =
           s.c.val[3]!.val[1]! ^^^ s.c.val[0]!.val[0]! ⌝ ⦄ := by
-  -- TODO(new-aeneas): see theta_d TODO in ThetaLiftDefs.lean
-  sorry
+  unfold keccak.keccakf1600_round1_theta_d
+  hax_mvcgen
+  all_goals first
+    | scalar_tac
+    | trivial
+    | (refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+       all_goals first | trivial | assumption | (
+         simp only [Std.WP.predn] at *
+         try apply Std.U32.bv_eq_imp_eq
+         simp_all [Std.UScalar.bv_xor, Foundation.rot32]))
 
 set_option maxHeartbeats 8000000 in
 @[spec high]
@@ -957,9 +979,32 @@ constants in the post (lanes/halves/rotations). -/
    FC post for any round's y1..y4 PrcLift sub-fn (no RC step, preserves
    `s.i`). Hygiene disabled so the `h_25..h_55` names produced by
    `hax_mvcgen` resolve. -/
--- TODO(new-aeneas): hypothesis names from `expose_names` no longer match.
--- Stubbed.
-local macro "round1_prc_y_zeta_no_rc_proof" _subfun:ident : tactic => `(tactic| sorry)
+set_option hygiene false in
+local macro "round1_prc_y_zeta_no_rc_proof" subfun:ident : tactic => `(tactic|
+  (unfold $subfun
+   hax_mvcgen
+   all_goals try scalar_tac
+   expose_names
+   refine ⟨?_, ?_, ?_, ?_⟩
+   · exact h_58.trans (h_51.trans (h_44.trans (h_37.trans h_30)))
+   · exact h_57.trans (h_50.trans (h_43.trans (h_36.trans h_29)))
+   · exact h_56.trans (h_49.trans (h_42.trans (h_35.trans h_28)))
+   · rw [h_59, h_52, h_45, h_38, h_31]
+     norm_num [apply_5_writes]
+     congr 6
+     all_goals try apply Std.U32.bv_eq_imp_eq
+     all_goals (
+       simp only [
+         h_27.2, h_26.2, h_25,
+         h_34.2, h_33.2, h_32,
+         h_41.2, h_40.2, h_39,
+         h_48.2, h_47.2, h_46,
+         h_55.2, h_54.2, h_53,
+         h_7, h_9, h_20, h_22, h_24,
+         h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+         h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+         Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, Foundation.rot32]
+       norm_num)))
 
 set_option maxHeartbeats 16000000 in
 @[spec]
@@ -981,8 +1026,31 @@ private theorem round1_pi_rho_chi_y0_zeta0_spec_fc
         (bx2 ^^^ ((~~~bx3) &&& bx4))
         (bx3 ^^^ ((~~~bx4) &&& bx0))
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
-  -- TODO(new-aeneas): broken inline proof; see PrcLift.lean macro TODOs.
-  sorry
+  unfold keccak.keccakf1600_round1_pi_rho_chi_y0_zeta0
+  hax_mvcgen
+  all_goals try scalar_tac
+  expose_names
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact h_60.trans (h_53.trans (h_46.trans (h_39.trans h_32)))
+  · exact h_59.trans (h_52.trans (h_45.trans (h_38.trans h_31)))
+  · exact h_58.trans (h_51.trans (h_44.trans (h_37.trans h_30)))
+  · rw [h_61, h_54, h_47, h_40, h_33]
+    norm_num [apply_5_writes]
+    congr 6
+    all_goals try apply Std.U32.bv_eq_imp_eq
+    all_goals (
+      simp only [
+        h_29.2, h_27.2, h_26.2, h_25,
+        h_36.2, h_35.2, h_34,
+        h_43.2, h_42.2, h_41,
+        h_50.2, h_49.2, h_48,
+        h_57.2, h_56.2, h_55,
+        h_7, h_9, h_20, h_22, h_24,
+        h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+        h_28,
+        h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+        Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, Foundation.rot32]
+      norm_num)
 
 /- Round-1 y0_zeta1 FC (RC + s.i++): same proof shape as round-0's
    `pi_rho_chi_y0_zeta1_spec_fc`. -/
@@ -1006,8 +1074,32 @@ private theorem round1_pi_rho_chi_y0_zeta1_spec_fc
         (bx2 ^^^ ((~~~bx3) &&& bx4))
         (bx3 ^^^ ((~~~bx4) &&& bx0))
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
-  -- TODO(new-aeneas): broken inline proof; see PrcLift.lean macro TODOs.
-  sorry
+  unfold keccak.keccakf1600_round1_pi_rho_chi_y0_zeta1
+  hax_mvcgen
+  all_goals try scalar_tac
+  expose_names
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact h_61.trans (h_54.trans (h_47.trans (h_40.trans h_33)))
+  · exact h_60.trans (h_53.trans (h_46.trans (h_39.trans h_32)))
+  · rw [h_59, h_52, h_45, h_38, h_31, h_30]
+    rfl
+  · rw [h_62, h_55, h_48, h_41, h_34]
+    norm_num [apply_5_writes]
+    congr 6
+    all_goals try apply Std.U32.bv_eq_imp_eq
+    all_goals (
+      simp only [
+        h_29.2, h_27.2, h_26.2, h_25,
+        h_37.2, h_36.2, h_35,
+        h_44.2, h_43.2, h_42,
+        h_51.2, h_50.2, h_49,
+        h_58.2, h_57.2, h_56,
+        h_7, h_9, h_20, h_22, h_24,
+        h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+        h_28,
+        h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+        Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, Foundation.rot32]
+      norm_num)
 
 /-! Round-1 y1..y4 × ζ0/ζ1 FCs (no RC; preserve `s.i`). -/
 
@@ -1606,8 +1698,16 @@ private theorem round2_theta_d_spec_fc (s : state.KeccakState) :
           s.c.val[3]!.val[0]! ^^^ Foundation.rot32 s.c.val[0]!.val[1]! 1 ∧
         r.d.val[4]!.val[1]! =
           s.c.val[3]!.val[1]! ^^^ s.c.val[0]!.val[0]! ⌝ ⦄ := by
-  -- TODO(new-aeneas): see theta_d TODO in ThetaLiftDefs.lean
-  sorry
+  unfold keccak.keccakf1600_round2_theta_d
+  hax_mvcgen
+  all_goals first
+    | scalar_tac
+    | trivial
+    | (refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+       all_goals first | trivial | assumption | (
+         simp only [Std.WP.predn] at *
+         try apply Std.U32.bv_eq_imp_eq
+         simp_all [Std.UScalar.bv_xor, Foundation.rot32]))
 
 set_option maxHeartbeats 8000000 in
 @[spec high]
@@ -1707,8 +1807,31 @@ private theorem round2_pi_rho_chi_y0_zeta0_spec_fc
         (bx2 ^^^ ((~~~bx3) &&& bx4))
         (bx3 ^^^ ((~~~bx4) &&& bx0))
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
-  -- TODO(new-aeneas): broken inline proof; see PrcLift.lean macro TODOs.
-  sorry
+  unfold keccak.keccakf1600_round2_pi_rho_chi_y0_zeta0
+  hax_mvcgen
+  all_goals try scalar_tac
+  expose_names
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact h_60.trans (h_53.trans (h_46.trans (h_39.trans h_32)))
+  · exact h_59.trans (h_52.trans (h_45.trans (h_38.trans h_31)))
+  · exact h_58.trans (h_51.trans (h_44.trans (h_37.trans h_30)))
+  · rw [h_61, h_54, h_47, h_40, h_33]
+    norm_num [apply_5_writes]
+    congr 6
+    all_goals try apply Std.U32.bv_eq_imp_eq
+    all_goals (
+      simp only [
+        h_29.2, h_27.2, h_26.2, h_25,
+        h_36.2, h_35.2, h_34,
+        h_43.2, h_42.2, h_41,
+        h_50.2, h_49.2, h_48,
+        h_57.2, h_56.2, h_55,
+        h_7, h_9, h_20, h_22, h_24,
+        h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+        h_28,
+        h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+        Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, Foundation.rot32]
+      norm_num)
 
 set_option maxHeartbeats 16000000 in
 @[spec]
@@ -1730,8 +1853,32 @@ private theorem round2_pi_rho_chi_y0_zeta1_spec_fc
         (bx2 ^^^ ((~~~bx3) &&& bx4))
         (bx3 ^^^ ((~~~bx4) &&& bx0))
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
-  -- TODO(new-aeneas): broken inline proof; see PrcLift.lean macro TODOs.
-  sorry
+  unfold keccak.keccakf1600_round2_pi_rho_chi_y0_zeta1
+  hax_mvcgen
+  all_goals try scalar_tac
+  expose_names
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact h_61.trans (h_54.trans (h_47.trans (h_40.trans h_33)))
+  · exact h_60.trans (h_53.trans (h_46.trans (h_39.trans h_32)))
+  · rw [h_59, h_52, h_45, h_38, h_31, h_30]
+    rfl
+  · rw [h_62, h_55, h_48, h_41, h_34]
+    norm_num [apply_5_writes]
+    congr 6
+    all_goals try apply Std.U32.bv_eq_imp_eq
+    all_goals (
+      simp only [
+        h_29.2, h_27.2, h_26.2, h_25,
+        h_37.2, h_36.2, h_35,
+        h_44.2, h_43.2, h_42,
+        h_51.2, h_50.2, h_49,
+        h_58.2, h_57.2, h_56,
+        h_7, h_9, h_20, h_22, h_24,
+        h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+        h_28,
+        h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+        Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, Foundation.rot32]
+      norm_num)
 
 set_option maxHeartbeats 16000000 in
 @[spec]
@@ -2318,8 +2465,16 @@ private theorem round3_theta_d_spec_fc (s : state.KeccakState) :
           s.c.val[3]!.val[0]! ^^^ Foundation.rot32 s.c.val[0]!.val[1]! 1 ∧
         r.d.val[4]!.val[1]! =
           s.c.val[3]!.val[1]! ^^^ s.c.val[0]!.val[0]! ⌝ ⦄ := by
-  -- TODO(new-aeneas): see theta_d TODO in ThetaLiftDefs.lean
-  sorry
+  unfold keccak.keccakf1600_round3_theta_d
+  hax_mvcgen
+  all_goals first
+    | scalar_tac
+    | trivial
+    | (refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+       all_goals first | trivial | assumption | (
+         simp only [Std.WP.predn] at *
+         try apply Std.U32.bv_eq_imp_eq
+         simp_all [Std.UScalar.bv_xor, Foundation.rot32]))
 
 set_option maxHeartbeats 8000000 in
 @[spec high]
@@ -2419,8 +2574,31 @@ private theorem round3_pi_rho_chi_y0_zeta0_spec_fc
         (bx2 ^^^ ((~~~bx3) &&& bx4))
         (bx3 ^^^ ((~~~bx4) &&& bx0))
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
-  -- TODO(new-aeneas): broken inline proof; see PrcLift.lean macro TODOs.
-  sorry
+  unfold keccak.keccakf1600_round3_pi_rho_chi_y0_zeta0
+  hax_mvcgen
+  all_goals try scalar_tac
+  expose_names
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact h_60.trans (h_53.trans (h_46.trans (h_39.trans h_32)))
+  · exact h_59.trans (h_52.trans (h_45.trans (h_38.trans h_31)))
+  · exact h_58.trans (h_51.trans (h_44.trans (h_37.trans h_30)))
+  · rw [h_61, h_54, h_47, h_40, h_33]
+    norm_num [apply_5_writes]
+    congr 6
+    all_goals try apply Std.U32.bv_eq_imp_eq
+    all_goals (
+      simp only [
+        h_29.2, h_27.2, h_26.2, h_25,
+        h_36.2, h_35.2, h_34,
+        h_43.2, h_42.2, h_41,
+        h_50.2, h_49.2, h_48,
+        h_57.2, h_56.2, h_55,
+        h_7, h_9, h_20, h_22, h_24,
+        h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+        h_28,
+        h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+        Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, Foundation.rot32]
+      norm_num)
 
 set_option maxHeartbeats 16000000 in
 @[spec]
@@ -2442,8 +2620,32 @@ private theorem round3_pi_rho_chi_y0_zeta1_spec_fc
         (bx2 ^^^ ((~~~bx3) &&& bx4))
         (bx3 ^^^ ((~~~bx4) &&& bx0))
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
-  -- TODO(new-aeneas): broken inline proof; see PrcLift.lean macro TODOs.
-  sorry
+  unfold keccak.keccakf1600_round3_pi_rho_chi_y0_zeta1
+  hax_mvcgen
+  all_goals try scalar_tac
+  expose_names
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact h_61.trans (h_54.trans (h_47.trans (h_40.trans h_33)))
+  · exact h_60.trans (h_53.trans (h_46.trans (h_39.trans h_32)))
+  · rw [h_59, h_52, h_45, h_38, h_31, h_30]
+    rfl
+  · rw [h_62, h_55, h_48, h_41, h_34]
+    norm_num [apply_5_writes]
+    congr 6
+    all_goals try apply Std.U32.bv_eq_imp_eq
+    all_goals (
+      simp only [
+        h_29.2, h_27.2, h_26.2, h_25,
+        h_37.2, h_36.2, h_35,
+        h_44.2, h_43.2, h_42,
+        h_51.2, h_50.2, h_49,
+        h_58.2, h_57.2, h_56,
+        h_7, h_9, h_20, h_22, h_24,
+        h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+        h_28,
+        h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+        Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, Foundation.rot32]
+      norm_num)
 
 set_option maxHeartbeats 16000000 in
 @[spec]
@@ -3295,7 +3497,7 @@ open Result ControlFlow
 private theorem triple_of_ok_local {α : Type} {x : Result α} {v : α} {P : α → Prop}
     (hx : x = Aeneas.Std.Result.ok v) (hp : P v) :
     (⦃ ⌜ True ⌝ ⦄ x ⦃ ⇓ r => ⌜ P r ⌝ ⦄) := by
-  subst hx; simp [Std.Do.Triple, WP.wp, PredTrans.apply, hp]
+  subst hx; simp [Std.Do.Triple, WP.wp, hp]
 
 set_option maxHeartbeats 4000000 in
 theorem keccakf1600_4rounds_eq (BR : Std.Usize) (s : state.KeccakState)

@@ -414,7 +414,7 @@ theorem result_eq_of_triple {α : Type} {x : Std.Result α} {v : α}
   | .ok v', h =>
       have hv' : v' = v := by simpa [Triple, WP.wp] using h
       rw [hv']
-  | .fail e, h => exact absurd h (by simp [Triple, WP.wp, PredTrans.apply])
-  | .div, h => exact absurd h (by simp [Triple, WP.wp, PredTrans.apply])
+  | .fail e, h => exact absurd h (by simp [Triple, WP.wp])
+  | .div, h => exact absurd h (by simp [Triple, WP.wp])
 
 end libcrux_iot_sha3.Foundation

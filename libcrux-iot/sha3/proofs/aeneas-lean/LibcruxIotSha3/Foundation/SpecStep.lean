@@ -20,7 +20,7 @@ namespace libcrux_iot_sha3.Foundation
 theorem holds_chain_eq_ok {α : Type} {C : Aeneas.Std.Result α} {X : α}
     (h : (do let r ← C; pure (r = X)).holds) : C = .ok X := by
   cases C
-  all_goals simp_all [Aeneas.Std.Result.holds, Std.Do.Triple, WP.wp, PredTrans.apply, Functor.map,
+  all_goals simp_all [Aeneas.Std.Result.holds, Std.Do.Triple, WP.wp, Functor.map,
                       Std.Do.SPred.down_pure]
 
 /-! ## Spec-side one-round step (theta + rho + pi + chi + iota)
@@ -28,7 +28,7 @@ theorem holds_chain_eq_ok {α : Type} {C : Aeneas.Std.Result α} {X : α}
 Bundles the 5-step spec round into a single function so we can talk
 about iterating it. -/
 
-noncomputable def spec_round_step (state : Std.Array Std.U64 25#usize) (round : Std.Usize) :
+def spec_round_step (state : Std.Array Std.U64 25#usize) (round : Std.Usize) :
     Result (Std.Array Std.U64 25#usize) := do
   let s_theta ← keccak_f.theta state
   let s_rho ← keccak_f.rho s_theta
