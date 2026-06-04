@@ -291,9 +291,9 @@ theorem triple_conj_post {α} {e : Aeneas.Std.Result α} {Q R : α → Prop}
     (hR : ⦃⌜True⌝⦄ e ⦃⇓ r => ⌜R r⌝⦄) :
     ⦃⌜True⌝⦄ e ⦃⇓ r => ⌜Q r ∧ R r⌝⦄ := by
   cases e
-  · simp_all [Std.Do.Triple, WP.wp]
-  · simp_all [Std.Do.Triple, WP.wp]
-  · simp_all [Std.Do.Triple, WP.wp]
+  · simp_all [Std.Do.Triple, WP.wp, PredTrans.apply]
+  · simp_all [Std.Do.Triple, WP.wp, PredTrans.apply]
+  · simp_all [Std.Do.Triple, WP.wp, PredTrans.apply]
 
 /-- Lift a pure-prop precondition `⌜P⌝` of a `Triple` into a Lean-level
 hypothesis. -/
@@ -301,8 +301,8 @@ theorem triple_imp_intro {α} {e : Aeneas.Std.Result α} {P : Prop} {Q : α → 
     (h : P → ⦃⌜True⌝⦄ e ⦃⇓ r => ⌜Q r⌝⦄) :
     ⦃⌜P⌝⦄ e ⦃⇓ r => ⌜Q r⌝⦄ := by
   cases e
-  · simp_all [Std.Do.Triple, WP.wp]
-  · simp_all [Std.Do.Triple, WP.wp]
-  · simp_all [Std.Do.Triple, WP.wp]
+  · simp_all [Std.Do.Triple, WP.wp, PredTrans.apply]
+  · simp_all [Std.Do.Triple, WP.wp, PredTrans.apply]
+  · simp_all [Std.Do.Triple, WP.wp, PredTrans.apply]
 
 end libcrux_iot_sha3.Foundation

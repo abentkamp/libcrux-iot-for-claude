@@ -22,7 +22,7 @@ check_version(["cargo", "hax", "--version"], "hax", HAX_VERSION)
 check_version(["aeneas", "-version"], "aeneas", AENEAS_VERSION)
 
 result = subprocess.run(
-    ["cargo", "hax", "into", "aeneas-lean", "--aeneas-args=-core-models-lib"],
+    ["cargo", "hax", "into", "aeneas-lean", '--aeneas-args="-core-models-lib"'],
     env={**os.environ, "RUSTFLAGS": "--cfg hax_backend_lean"},
     capture_output=True,
     text=True,
@@ -49,53 +49,46 @@ if result.returncode != 0:
           f"continuing with post-processing (axiom remains inline).",
           file=sys.stderr)
 
-funs_lean = "proofs/aeneas-lean/LibcruxIotSha3/Extraction/Funs.lean"
-with open(funs_lean) as f:
-    content = f.read()
+funs_lean = Path("proofs/aeneas-lean/LibcruxIotSha3/Extraction/Funs.lean")
+content = funs_lean.read_text()
 
+content = re.sub(
+    r"(^import Aeneas\b)",
+    r"\1\nimport LibcruxIotSha3.Extraction.Missing",
+    content,
+    count=1,
+    flags=re.MULTILINE,
+)
+
+# Patch the auto-generated `Debug for Algorithm` impl: aeneas can't extract
+# the `derive(Debug)` body so it leaves the `fmt` callee as an axiom with
+# the wrong arity (extra `Formatter → Formatter` component), and uses
+# `fmt :=` where the structure field is named `dbg_fmt`. Replace the
+# whole record with a trivial Debug instance.
 content = content.replace(
-    "import Aeneas",
-    "import Aeneas\nimport LibcruxIotSha3.Extraction.Missing",
+    "def Algorithm.Insts.CoreFmtDebug : core.fmt.Debug Algorithm := {\n"
+    "  fmt := Algorithm.Insts.CoreFmtDebug.fmt\n}",
+    "def Algorithm.Insts.CoreFmtDebug : core.fmt.Debug Algorithm :=\n"
+    "  { dbg_fmt := fun _ f => ok (.Ok (), f) }",
     1,
 )
 
-# This definition is hitting the recursion limit:
-content = content.replace(
-    "/-- [libcrux_iot_sha3::keccak::RC_INTERLEAVED_1]",
-    "set_option maxRecDepth 1000 in\n/-- [libcrux_iot_sha3::keccak::RC_INTERLEAVED_1]",
-    1,
-)
-
-# This definition is hitting the recursion limit:
-content = content.replace(
-    "/-- [libcrux_iot_sha3::keccak::RC_INTERLEAVED_0]",
-    "set_option maxRecDepth 1000 in\n/-- [libcrux_iot_sha3::keccak::RC_INTERLEAVED_0]",
-    1,
-)
-
-# Wrong signature of `core_models.fmt.rt.Argument.new_display`
-block = (
+# `core.fmt.rt.Argument.new_display` is extracted with arity 1 (the value to
+# format), but the `keccak::_squeeze` panic-fmt block calls it with the
+# `Display` instance as an extra arg, and `core.fmt.Arguments.new` is also
+# stubbed. Comment the whole block out — the `fail panic` below ends the
+# branch anyway.
+panic_block = (
     "    let a ←\n"
-    "      core_models.fmt.rt.Argument.new_display\n"
-    "        core_models.Usize.Insts.Core_modelsFmtDisplay i\n"
+    "      core.fmt.rt.Argument.new_display core.Usize.Insts.CoreFmtDisplay i\n"
     "    let a1 ←\n"
-    "      core_models.fmt.rt.Argument.new_display\n"
-    "        core_models.Usize.Insts.Core_modelsFmtDisplay RATE\n"
+    "      core.fmt.rt.Argument.new_display core.Usize.Insts.CoreFmtDisplay RATE\n"
     "    let _ ←\n"
-    "      core_models.fmt.Arguments.new\n"
+    "      core.fmt.Arguments.new\n"
     "        (Array.make 7#usize [\n"
     "          192#u8, 3#u8, 32#u8, 62#u8, 32#u8, 192#u8, 0#u8\n"
     "          ]) (Array.make 2#usize [ a, a1 ])"
 )
-content = content.replace(block, "/-\n" + block + "\n-/", 1)
+content = content.replace(panic_block, "/-\n" + panic_block + "\n-/", 1)
 
-# Wrong field name in `core_models.fmt.Debug`
-content = content.replace(
-    "  fmt := ",
-    "  dbg_fmt := ",
-    1,
-)
-
-
-with open(funs_lean, "w") as f:
-    f.write(content)
+funs_lean.write_text(content)

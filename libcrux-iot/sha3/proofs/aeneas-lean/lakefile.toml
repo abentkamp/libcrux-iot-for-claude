@@ -9,10 +9,9 @@ globs = ["LibcruxIotSha3", "LibcruxIotSha3.+"]
 [[require]]
 name = "Hax"
 git = { url = "https://github.com/cryspen/hax-evit", subDir = "hax-lib/proof-libs/aeneas-lean" }
-rev = "c1ba7b8f4bead612ff24952b57abeb902b288718"
+rev = "af5a2829a52005bf38e023b4370ff6e6ae694da6"
 
-# Match Pascal's HacspecSha3, which uses the old `core_models` namespace.
 [[require]]
 name = "HacspecSha3"
 git = { url = "https://github.com/abentkamp/libcrux-for-claude", subDir = "specs/sha3/proofs/aeneas-lean" }
-rev = "92eec9e20446c3596450dd52f1603d5b04259329"
+rev = "163f227bbaa6ce4d8a1ab7326cb592eedcf8bd3f"

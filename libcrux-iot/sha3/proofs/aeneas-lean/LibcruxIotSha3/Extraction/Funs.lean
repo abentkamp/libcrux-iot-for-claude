@@ -779,7 +779,6 @@ def keccak.keccakf1600_round3_pi_rho_chi_y1_zeta0
   let ax4 ← lift (bx4 ^^^ i14)
   state.KeccakState.set_with_zeta s4 1#usize 4#usize 0#usize ax4
 
-set_option maxRecDepth 1000 in
 /-- [libcrux_iot_sha3::keccak::RC_INTERLEAVED_1]
     Source: 'sha3/src/keccak.rs', lines 298:0-331:2 -/
 @[global_simps, irreducible]
@@ -891,7 +890,6 @@ def keccak.keccakf1600_round3_pi_rho_chi_y0_zeta1
   let ax4 ← lift (bx4 ^^^ i17)
   state.KeccakState.set_with_zeta s4 0#usize 4#usize 1#usize ax4
 
-set_option maxRecDepth 1000 in
 /-- [libcrux_iot_sha3::keccak::RC_INTERLEAVED_0]
     Source: 'sha3/src/keccak.rs', lines 258:0-291:2 -/
 @[global_simps, irreducible]
@@ -4041,6 +4039,7 @@ def state.KeccakState.store
         ok (index_mut_back s2)
       else ok out1
   else
+/-
     let a ←
       core.fmt.rt.Argument.new_display core.Usize.Insts.CoreFmtDisplay i
     let a1 ←
@@ -4050,6 +4049,7 @@ def state.KeccakState.store
         (Array.make 7#usize [
           192#u8, 3#u8, 32#u8, 62#u8, 32#u8, 192#u8, 0#u8
           ]) (Array.make 2#usize [ a, a1 ])
+-/
     fail panic
 
 /-- [libcrux_iot_sha3::keccak::_squeeze]: loop body 0:
@@ -4550,9 +4550,8 @@ axiom Algorithm.Insts.CoreFmtDebug.fmt
 /-- Trait implementation: [libcrux_iot_sha3::{impl core::fmt::Debug for libcrux_iot_sha3::Algorithm}]
     Source: 'sha3/src/lib.rs', lines 76:46-76:51 -/
 @[reducible]
-def Algorithm.Insts.CoreFmtDebug : core.fmt.Debug Algorithm := {
-  dbg_fmt := Algorithm.Insts.CoreFmtDebug.fmt
-}
+def Algorithm.Insts.CoreFmtDebug : core.fmt.Debug Algorithm :=
+  { dbg_fmt := fun _ f => ok (.Ok (), f) }
 
 /-- Trait implementation: [libcrux_iot_sha3::{impl core::marker::StructuralPartialEq for libcrux_iot_sha3::Algorithm}]
     Source: 'sha3/src/lib.rs', lines 76:53-76:62 -/
