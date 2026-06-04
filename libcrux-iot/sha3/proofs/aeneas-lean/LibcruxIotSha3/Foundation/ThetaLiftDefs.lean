@@ -67,17 +67,17 @@ private theorem createi_foldlM_pure_aux
     `createi_pure_spec` (Triple form). -/
 theorem createi_pure_eq
     {T F : Type} (N : Std.Usize)
-    (inst : core_models.ops.function.Fn F Std.Usize T) (c : F) (f : Nat → T)
+    (inst : core_models.ops.function.FnMut F Std.Usize T) (c : F) (f : Nat → T)
     (hpure : ∀ k : Nat, k < N.val →
-      inst.FnMutInst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c)) :
+      inst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c)) :
     createi N inst c =
       .ok ⟨(List.range N.val).map f,
            by simp [List.length_map, List.length_range]⟩ := by
   have hf : ∀ k ∈ List.range N.val,
-      inst.FnMutInst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c) := by
+      inst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c) := by
     intro k hk; exact hpure k (List.mem_range.mp hk)
   have h_fold :=
-    createi_foldlM_pure_aux inst.FnMutInst c f (List.range N.val) [] hf
+    createi_foldlM_pure_aux inst c f (List.range N.val) [] hf
   simp only [List.nil_append] at h_fold
   unfold createi core_models.array.from_fn rust_primitives.slice.array_from_fn
   split
@@ -104,16 +104,16 @@ in `keccak_f.theta` (3 calls) and `keccak_f.{rho,pi,chi}` (1 call each). -/
 @[spec]
 theorem createi_pure_spec
     {T F : Type} [Inhabited T] (N : Std.Usize)
-    (inst : core_models.ops.function.Fn F Std.Usize T) (c : F) (f : Nat → T)
+    (inst : core_models.ops.function.FnMut F Std.Usize T) (c : F) (f : Nat → T)
     (hpure : ∀ k : Nat, k < N.val →
       ⦃ ⌜ True ⌝ ⦄
-      inst.FnMutInst.call_mut c ⟨BitVec.ofNat _ k⟩
+      inst.call_mut c ⟨BitVec.ofNat _ k⟩
       ⦃ ⇓ r => ⌜ r = (f k, c) ⌝ ⦄) :
     ⦃ ⌜ True ⌝ ⦄
     createi N inst c
     ⦃ ⇓ a => ⌜ ∀ i : Nat, i < N.val → a.val[i]! = f i ⌝ ⦄ := by
   have hpure_eq : ∀ k : Nat, k < N.val →
-      inst.FnMutInst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c) :=
+      inst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c) :=
     fun k hk => result_eq_of_triple (hpure k hk)
   have heq := createi_pure_eq N inst c f hpure_eq
   rw [heq]
@@ -159,7 +159,6 @@ theorem theta_closure_call_mut_spec
       state k
     ⦃ ⇓ r => ⌜ r = (theta_closure_c_at state k.val, state) ⌝ ⦄ := by
   unfold keccak_f.theta.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
-        keccak_f.theta.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
         theta_closure_c_at
   hax_mvcgen
   all_goals (first | scalar_tac | (simp; scalar_tac)
@@ -181,7 +180,6 @@ theorem theta_closure_1_call_mut_spec
       c k
     ⦃ ⇓ r => ⌜ r = (theta_closure_1_d_at c k.val, c) ⌝ ⦄ := by
   unfold keccak_f.theta.closure_1.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
-        keccak_f.theta.closure_1.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
         theta_closure_1_d_at
   hax_mvcgen
   all_goals (first | scalar_tac
@@ -209,7 +207,6 @@ theorem theta_closure_2_call_mut_spec
       sd k
     ⦃ ⇓ r => ⌜ r = (theta_closure_2_at sd k.val, sd) ⌝ ⦄ := by
   unfold keccak_f.theta.closure_2.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
-        keccak_f.theta.closure_2.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
         theta_closure_2_at
   hax_mvcgen
   all_goals (first | scalar_tac | (simp; scalar_tac)
@@ -230,7 +227,6 @@ theorem rho_closure_call_mut_spec
       state k
     ⦃ ⇓ r => ⌜ r = (rho_closure_at state k.val, state) ⌝ ⦄ := by
   unfold keccak_f.rho.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
-        keccak_f.rho.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
         rho_closure_at
   hax_mvcgen
   all_goals (first | scalar_tac
@@ -255,7 +251,6 @@ theorem pi_closure_call_mut_spec
       state k
     ⦃ ⇓ r => ⌜ r = (pi_closure_at state k.val, state) ⌝ ⦄ := by
   unfold keccak_f.pi.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
-        keccak_f.pi.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
         pi_closure_at
   hax_mvcgen
   all_goals (first | scalar_tac | (simp; scalar_tac)
@@ -282,7 +277,6 @@ theorem chi_closure_call_mut_spec
       state k
     ⦃ ⇓ r => ⌜ r = (chi_closure_at state k.val, state) ⌝ ⦄ := by
   unfold keccak_f.chi.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
-        keccak_f.chi.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU64.call
         chi_closure_at
   hax_mvcgen
   all_goals (first

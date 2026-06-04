@@ -550,9 +550,9 @@ private theorem squeeze_closure_call_eq
     (s_b : Std.Array Std.U64 25#usize)
     (h_iter :
       sponge.iterate_keccak_f ⟨BitVec.ofNat _ (k / rate.val)⟩ state = .ok s_b) :
-    (sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU8.call
-        (OUTPUT_LEN := OUTPUT_LEN) (rate, state) ⟨BitVec.ofNat _ k⟩)
-      = .ok (squeeze_byte_at s_b (k - (k / rate.val) * rate.val)) := by
+    sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU8.call_mut
+        (OUTPUT_LEN := OUTPUT_LEN) (rate, state) ⟨BitVec.ofNat _ k⟩
+      = .ok (squeeze_byte_at s_b (k - (k / rate.val) * rate.val), (rate, state)) := by
   -- args.val = k (since k ≤ Usize.max).
   set args : Std.Usize := ⟨BitVec.ofNat _ k⟩ with hargs_def
   have h_args_val : args.val = k := usize_ofNat_toNat k h_k_le
@@ -664,7 +664,7 @@ private theorem squeeze_closure_call_eq
     rw [Option.getD_some]
     rfl
   -- Assemble: walk the closure body. New closure body (no byte_lane_idx).
-  unfold sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU8.call
+  unfold sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU8.call_mut
   show (do
     let b' ← args / rate
     let i1' ← b' * rate
@@ -674,7 +674,8 @@ private theorem squeeze_closure_call_eq
     let i3' ← Std.Array.index_usize state_b' i2'
     let a1' ← core_models.num.U64.to_le_bytes i3'
     let i4' ← j' % 8#usize
-    Std.Array.index_usize a1' i4') = _
+    let i5' ← Std.Array.index_usize a1' i4'
+    Result.ok (i5', ((rate, state) : sponge.squeeze.closure OUTPUT_LEN))) = _
   rw [show args / rate = (.ok b : Result Std.Usize) from h_b_eq]; simp only [bind_tc_ok]
   rw [show b * rate = (.ok i1 : Result Std.Usize) from h_i1_eq]; simp only [bind_tc_ok]
   rw [show args - i1 = (.ok j : Result Std.Usize) from h_j_eq]; simp only [bind_tc_ok]
@@ -683,8 +684,8 @@ private theorem squeeze_closure_call_eq
   rw [h_i4_eq]; simp only [bind_tc_ok]
   rw [h_a1_eq]; simp only [bind_tc_ok]
   rw [show j % 8#usize = (.ok i5 : Result Std.Usize) from h_i5_eq]; simp only [bind_tc_ok]
-  rw [h_v_final_eq]
-  -- Now goal: .ok v_final = .ok (squeeze_byte_at s_b (k - (k/rate.val)*rate.val))
+  rw [h_v_final_eq]; simp only [bind_tc_ok]
+  -- Now goal: .ok (v_final, (rate, state)) = .ok (squeeze_byte_at .., (rate, state))
   -- Under new layout, squeeze_byte_at indexes s_b at (j/8) directly.
   have h_u_eq :
       u = s_b.val[(k - k / rate.val * rate.val) / 8]! := by
@@ -736,24 +737,17 @@ theorem sponge_squeeze_byte_eq
     omega
   -- Build the per-k call_mut equation.
   have h_call_mut_eq : ∀ k : Nat, k < OUTPUT_LEN.val →
-      (sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU8
-          OUTPUT_LEN).FnMutInst.call_mut (rate, state) ⟨BitVec.ofNat _ k⟩
+      (sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU8
+          (OUTPUT_LEN := OUTPUT_LEN)).call_mut (rate, state) ⟨BitVec.ofNat _ k⟩
         = .ok (f k, (rate, state)) := by
     intro k hk
-    -- Unfold call_mut to call ; ok (·, state).
-    show sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU8.call_mut
-            (rate, state) ⟨BitVec.ofNat _ k⟩
-          = .ok (f k, (rate, state))
-    unfold sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU8.call_mut
-    have h_call_eq :=
-      squeeze_closure_call_eq (OUTPUT_LEN := OUTPUT_LEN) rate state k
-        (h_k_le_max k hk) h_rate_pos h_rate_bnd (s_b k) (h_iter k hk)
-    rw [h_call_eq]
-    rfl
+    exact squeeze_closure_call_eq (OUTPUT_LEN := OUTPUT_LEN) rate state k
+      (h_k_le_max k hk) h_rate_pos h_rate_bnd (s_b k) (h_iter k hk)
   -- Apply createi_pure_eq.
   have h_createi :=
     _root_.libcrux_iot_sha3.Foundation.createi_pure_eq OUTPUT_LEN
-      (sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnTupleUsizeU8 OUTPUT_LEN)
+      (sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU8
+        (OUTPUT_LEN := OUTPUT_LEN))
       (rate, state) f h_call_mut_eq
   refine ⟨_, h_createi, ?_⟩
   intro k hk
