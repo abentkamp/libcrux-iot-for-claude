@@ -1,6 +1,6 @@
 import Aeneas
 import CoreModels
-import HacspecSha3.Missing
+import HacspecSha3
 
 open Aeneas Aeneas.Std Result
 
