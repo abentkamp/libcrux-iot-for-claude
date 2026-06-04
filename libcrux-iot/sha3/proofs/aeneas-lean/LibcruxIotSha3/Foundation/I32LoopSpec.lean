@@ -31,7 +31,7 @@ loop-spec helpers) and externally (in `HacspecBridge.lean`). -/
 
 /-! ## I32 iterator-next spec
 
-The `core_models.I32.Insts.Core_modelsIterRangeStep` instance (defined
+The `I32.Insts.CoreIterRangeStep` instance (defined
 in `Extraction/Missing.lean:25`) uses `IScalar.tryMk .I32 (start.val +
 1)` for `forward_checked`. For our use case (range `[0, 6)`), the
 bounds are well within I32 and `tryMk` succeeds. -/
@@ -44,11 +44,11 @@ theorem IteratorRange_next_spec_i32 (i e : Std.I32)
     (h_ge : i.val ≥ e.val →
       (Q.1 (none, { start := i, «end» := e })).down) :
     ⦃ ⌜ True ⌝ ⦄
-    core_models.iter.range.IteratorRange.next core_models.I32.Insts.Core_modelsIterRangeStep
+    core.iter.range.IteratorRange.next I32.Insts.CoreIterRangeStep
       { start := i, «end» := e }
     ⦃ Q ⦄ := by
-  unfold core_models.iter.range.IteratorRange.next
-  unfold core_models.I32.Insts.Core_modelsIterRangeStep
+  unfold core.iter.range.IteratorRange.next
+  unfold I32.Insts.CoreIterRangeStep
   by_cases h : i.val < e.val
   · -- i < e: partial_cmp returns Less, forward_checked succeeds (i+1 ≤ e < 2^31).
     have hbnd : i.val + 1 < 2^31 := by omega
@@ -82,10 +82,10 @@ theorem IteratorRange_next_spec_i32 (i e : Std.I32)
         (match
           (match if i.val < e.val then Ordering.lt
                   else if i.val = e.val then Ordering.eq else Ordering.gt with
-           | Ordering.lt => core_models.cmp.Ordering.Less
-           | Ordering.eq => core_models.cmp.Ordering.Equal
-           | Ordering.gt => core_models.cmp.Ordering.Greater) with
-          | core_models.cmp.Ordering.Less => true
+           | Ordering.lt => core.cmp.Ordering.Less
+           | Ordering.eq => core.cmp.Ordering.Equal
+           | Ordering.gt => core.cmp.Ordering.Greater) with
+          | core.cmp.Ordering.Less => true
           | _ => false) = false := by
       simp only [if_neg h]
       by_cases hieq : i.val = e.val <;> simp [hieq]
@@ -132,8 +132,8 @@ end loop_range_i32_helpers
 
 set_option maxHeartbeats 2000000 in
 theorem loop_range_spec_i32 {β : Type}
-    (body : (core_models.ops.range.Range Std.I32 × β) →
-      Result (ControlFlow (core_models.ops.range.Range Std.I32 × β) β))
+    (body : (core.ops.range.Range Std.I32 × β) →
+      Result (ControlFlow (core.ops.range.Range Std.I32 × β) β))
     (init : β) (s e : Std.I32) (inv : Std.I32 → β → Result Prop)
     (h_le : s.val ≤ e.val)
     (h_init : (inv s init).holds)

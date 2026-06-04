@@ -69,7 +69,7 @@ of 5 `inst.call_mut` calls building an `Array.make 5 [v0,v1,v2,v3,v4]`. -/
 
 set_option maxHeartbeats 400000000 in
 theorem array_from_fn_eq_unfold5
-    {T F : Type} (inst : core_models.ops.function.FnMut F Std.Usize T) (f0 : F)
+    {T F : Type} (inst : core.ops.function.FnMut F Std.Usize T) (f0 : F)
     (v0 v1 v2 v3 v4 : T) (f1 f2 f3 f4 f5 : F)
     (h0 : inst.call_mut f0 0#usize = .ok (v0, f1))
     (h1 : inst.call_mut f1 1#usize = .ok (v1, f2))
@@ -122,8 +122,8 @@ def spec_round_step_hacspec (state : Std.Array Std.U64 25#usize) (round : Std.Us
 /-! ## `Usize` iterator-next spec (analog of `IteratorRange_next_spec_i32`)
 
 The hacspec loop in `keccak_f.keccak_f_loop` iterates `Usize` indices over
-`[0, 24)`. The `Usize.Insts.Core_modelsIterRangeStep` instance is an
-abbrev for `core_models.iter.range.StepUsize` (see `FunsPrologue.lean`). -/
+`[0, 24)`. The `Usize.Insts.CoreIterRangeStep` instance is an
+abbrev for `core.iter.range.StepUsize` (see `FunsPrologue.lean`). -/
 
 theorem IteratorRange_next_spec_usize (i e : Std.Usize) {Q}
     (h_lt : (h : i.val < e.val) →
@@ -132,13 +132,13 @@ theorem IteratorRange_next_spec_usize (i e : Std.Usize) {Q}
     (h_ge : i.val ≥ e.val →
       (Q.1 (none, { start := i, «end» := e })).down) :
     ⦃ ⌜ True ⌝ ⦄
-    core_models.iter.range.IteratorRange.next
-      core_models.Usize.Insts.Core_modelsIterRangeStep
+    core.iter.range.IteratorRange.next
+      Usize.Insts.CoreIterRangeStep
       { start := i, «end» := e }
     ⦃ Q ⦄ := by
-  unfold core_models.iter.range.IteratorRange.next
-  unfold core_models.Usize.Insts.Core_modelsIterRangeStep
-    core_models.iter.range.StepUsize
+  unfold core.iter.range.IteratorRange.next
+  unfold Usize.Insts.CoreIterRangeStep
+    core.iter.range.StepUsize
   -- The StepUsize record's `forward_checked` is
   -- `Aeneas.Std.core.iter.range.StepUsize.forward_checked := λ start n => ok (Usize.checked_add ...)`.
   -- Unfold this so the proof can decide whether the result is Some or None.
@@ -175,10 +175,10 @@ theorem IteratorRange_next_spec_usize (i e : Std.Usize) {Q}
         (match
           (match if i.val < e.val then Ordering.lt
                   else if i.val = e.val then Ordering.eq else Ordering.gt with
-           | Ordering.lt => core_models.cmp.Ordering.Less
-           | Ordering.eq => core_models.cmp.Ordering.Equal
-           | Ordering.gt => core_models.cmp.Ordering.Greater) with
-          | core_models.cmp.Ordering.Less => true
+           | Ordering.lt => core.cmp.Ordering.Less
+           | Ordering.eq => core.cmp.Ordering.Equal
+           | Ordering.gt => core.cmp.Ordering.Greater) with
+          | core.cmp.Ordering.Less => true
           | _ => false) = false := by
       simp only [if_neg h]
       by_cases hieq : i.val = e.val <;> simp [hieq]
@@ -227,8 +227,8 @@ end loop_range_usize_helpers
 
 set_option maxHeartbeats 2000000 in
 theorem loop_range_spec_usize {β : Type}
-    (body : (core_models.ops.range.Range Std.Usize × β) →
-      Result (ControlFlow (core_models.ops.range.Range Std.Usize × β) β))
+    (body : (core.ops.range.Range Std.Usize × β) →
+      Result (ControlFlow (core.ops.range.Range Std.Usize × β) β))
     (init : β) (s e : Std.Usize) (inv : Std.Usize → β → Result Prop)
     (h_le : s.val ≤ e.val)
     (h_init : (inv s init).holds)
@@ -353,11 +353,11 @@ spec chain to `k` succeeds with `acc`. At each step:
 private theorem IteratorRange_next_eq_some_usize
     (kU : Std.Usize) (hkU : kU.val < 24) :
     ∃ kU' : Std.Usize, kU'.val = kU.val + 1 ∧
-      core_models.iter.range.IteratorRange.next
-        core_models.Usize.Insts.Core_modelsIterRangeStep
+      core.iter.range.IteratorRange.next
+        Usize.Insts.CoreIterRangeStep
         ({ start := kU, «end» := 24#usize } :
-          core_models.ops.range.Range Std.Usize) =
-        .ok (core_models.option.Option.Some kU,
+          core.ops.range.Range Std.Usize) =
+        .ok (core.option.Option.Some kU,
              { start := kU', «end» := 24#usize }) := by
   -- Compute kU' = kU + 1.
   have hkUmax : kU.val + 1 ≤ Std.Usize.max := by
@@ -383,9 +383,9 @@ private theorem IteratorRange_next_eq_some_usize
         omega
   obtain ⟨kU', hres, hkU'val⟩ := h_some
   refine ⟨kU', hkU'val, ?_⟩
-  unfold core_models.iter.range.IteratorRange.next
-  unfold core_models.Usize.Insts.Core_modelsIterRangeStep
-    core_models.iter.range.StepUsize
+  unfold core.iter.range.IteratorRange.next
+  unfold Usize.Insts.CoreIterRangeStep
+    core.iter.range.StepUsize
   unfold Aeneas.Std.core.iter.range.StepUsize.forward_checked
   have hkU_lt24 : kU.val < (24#usize : Std.Usize).val := hkU
   simp only [compare, compareOfLessAndEq, if_pos hkU_lt24, bind_tc_ok, hres,
@@ -395,15 +395,15 @@ private theorem IteratorRange_next_eq_some_usize
     returns `None`. -/
 private theorem IteratorRange_next_eq_none_usize
     (kU : Std.Usize) (hkU : kU.val ≥ 24) :
-    core_models.iter.range.IteratorRange.next
-      core_models.Usize.Insts.Core_modelsIterRangeStep
+    core.iter.range.IteratorRange.next
+      Usize.Insts.CoreIterRangeStep
       ({ start := kU, «end» := 24#usize } :
-        core_models.ops.range.Range Std.Usize) =
-      .ok (core_models.option.Option.None,
+        core.ops.range.Range Std.Usize) =
+      .ok (core.option.Option.None,
            { start := kU, «end» := 24#usize }) := by
-  unfold core_models.iter.range.IteratorRange.next
-  unfold core_models.Usize.Insts.Core_modelsIterRangeStep
-    core_models.iter.range.StepUsize
+  unfold core.iter.range.IteratorRange.next
+  unfold Usize.Insts.CoreIterRangeStep
+    core.iter.range.StepUsize
   have hkU_ge : ¬ kU.val < (24#usize : Std.Usize).val := by
     show ¬ kU.val < 24; omega
   by_cases heq : kU.val = (24#usize : Std.Usize).val
@@ -452,7 +452,7 @@ private theorem spec_chain_hacspec_div_mono
     definitional unfolding of `spec_round_step_hacspec`. -/
 private theorem loop_body_some_eq
     (acc : Std.Array Std.U64 25#usize) (kU : Std.Usize)
-    (iter1 : core_models.ops.range.Range Std.Usize) :
+    (iter1 : core.ops.range.Range Std.Usize) :
     (do
       let a ← keccak_f.theta acc
       let a1 ← keccak_f.rho a
@@ -461,7 +461,7 @@ private theorem loop_body_some_eq
       let state1 ← keccak_f.iota a3 kU
       Aeneas.Std.Result.ok
         (cont (iter1, state1) :
-          ControlFlow ((core_models.ops.range.Range Std.Usize) ×
+          ControlFlow ((core.ops.range.Range Std.Usize) ×
             (Std.Array Std.U64 25#usize)) (Std.Array Std.U64 25#usize))) =
     (do
       let state1 ← spec_round_step_hacspec acc kU

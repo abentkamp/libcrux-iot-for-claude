@@ -179,17 +179,17 @@ Companion to `Absorb.lean:core_models_Slice_Insts_index_RangeFromUsize_spec`
 uses to obtain the tail sub-slice. -/
 @[spec]
 theorem core_models_Slice_Insts_index_mut_RangeFromUsize_spec
-    {T : Type} (s : Slice T) (r : core_models.ops.range.RangeFrom Std.Usize)
+    {T : Type} (s : Slice T) (r : core.ops.range.RangeFrom Std.Usize)
     (h : r.start.val ≤ s.val.length) :
     ⦃ ⌜ True ⌝ ⦄
-    core_models.Slice.Insts.Core_modelsOpsIndexIndexMut.index_mut
-      (core_models.ops.range.RangeFromUsize.Insts.Core_modelsSliceIndexSliceIndexSliceSlice T) s r
+    core.slice.index.Slice.index_mut
+      (core.slice.index.SliceIndexRangeFromUsizeSlice T) s r
     ⦃ ⇓ p => ⌜ p.1.val = s.val.drop r.start.val ∧
                 p.1.val.length = s.val.length - r.start.val ∧
                 ∀ s', (p.2 s').val = s.val.setSlice! r.start.val s'.val ⌝ ⦄ := by
-  unfold core_models.Slice.Insts.Core_modelsOpsIndexIndexMut.index_mut
-         core_models.ops.range.RangeFromUsize.Insts.Core_modelsSliceIndexSliceIndexSliceSlice
-         core_models.cmRangeFromUsizeToAeneas
+  unfold core.slice.index.Slice.index_mut
+         core.slice.index.SliceIndexRangeFromUsizeSlice
+         core.cmRangeFromUsizeToAeneas
          core.slice.index.Slice.index_mut
          core.slice.index.SliceIndexRangeUsizeSlice.index_mut
   have h0' : (⟨r.start, s.len⟩ : core.ops.range.Range Std.Usize).start
@@ -550,7 +550,7 @@ private theorem squeeze_closure_call_eq
     (s_b : Std.Array Std.U64 25#usize)
     (h_iter :
       sponge.iterate_keccak_f ⟨BitVec.ofNat _ (k / rate.val)⟩ state = .ok s_b) :
-    sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU8.call_mut
+    sponge.squeeze.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU8.call_mut
         (OUTPUT_LEN := OUTPUT_LEN) (rate, state) ⟨BitVec.ofNat _ k⟩
       = .ok (squeeze_byte_at s_b (k - (k / rate.val) * rate.val), (rate, state)) := by
   -- args.val = k (since k ≤ Usize.max).
@@ -620,9 +620,9 @@ private theorem squeeze_closure_call_eq
     Std.WP.spec_imp_exists (Std.Array.index_usize_spec s_b i2 h_i2_lt_sb')
   -- Step 8: a1 = U64.to_le_bytes i4
   have h_a1_eq :
-      core_models.num.U64.to_le_bytes i4
+      core.num.U64.to_le_bytes i4
         = .ok (Std.core.num.U64.to_le_bytes i4) := by
-    unfold core_models.num.U64.to_le_bytes
+    unfold core.num.U64.to_le_bytes
            rust_primitives.arithmetic.to_le_bytes_u64
     rfl
   set a1 : Std.Array Std.U8 8#usize := Std.core.num.U64.to_le_bytes i4 with ha1_def
@@ -664,7 +664,7 @@ private theorem squeeze_closure_call_eq
     rw [Option.getD_some]
     rfl
   -- Assemble: walk the closure body. New closure body (no byte_lane_idx).
-  unfold sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU8.call_mut
+  unfold sponge.squeeze.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU8.call_mut
   show (do
     let b' ← args / rate
     let i1' ← b' * rate
@@ -672,7 +672,7 @@ private theorem squeeze_closure_call_eq
     let state_b' ← sponge.iterate_keccak_f b' state
     let i2' ← j' / 8#usize
     let i3' ← Std.Array.index_usize state_b' i2'
-    let a1' ← core_models.num.U64.to_le_bytes i3'
+    let a1' ← core.num.U64.to_le_bytes i3'
     let i4' ← j' % 8#usize
     let i5' ← Std.Array.index_usize a1' i4'
     Result.ok (i5', ((rate, state) : sponge.squeeze.closure OUTPUT_LEN))) = _
@@ -737,7 +737,7 @@ theorem sponge_squeeze_byte_eq
     omega
   -- Build the per-k call_mut equation.
   have h_call_mut_eq : ∀ k : Nat, k < OUTPUT_LEN.val →
-      (sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU8
+      (sponge.squeeze.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU8
           (OUTPUT_LEN := OUTPUT_LEN)).call_mut (rate, state) ⟨BitVec.ofNat _ k⟩
         = .ok (f k, (rate, state)) := by
     intro k hk
@@ -746,7 +746,7 @@ theorem sponge_squeeze_byte_eq
   -- Apply createi_pure_eq.
   have h_createi :=
     _root_.libcrux_iot_sha3.Foundation.createi_pure_eq OUTPUT_LEN
-      (sponge.squeeze.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU8
+      (sponge.squeeze.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU8
         (OUTPUT_LEN := OUTPUT_LEN))
       (rate, state) f h_call_mut_eq
   refine ⟨_, h_createi, ?_⟩

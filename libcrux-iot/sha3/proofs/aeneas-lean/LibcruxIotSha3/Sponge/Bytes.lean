@@ -62,10 +62,10 @@ private theorem triple_exists_ok_bytes {α : Type} {x : Result α}
 We capture each step's `.ok`-equation as a small local lemma so the
 final assembly is a straight `rw` chain. -/
 
-/-- `core_models.slice.Slice.len v = .ok (Std.Slice.len v)`. -/
+/-- `core.slice.Slice.len v = .ok (Std.Slice.len v)`. -/
 private theorem core_slice_len_eq_ok {T : Type} (v : Slice T) :
-    core_models.slice.Slice.len v = .ok (Std.Slice.len v) := by
-  unfold core_models.slice.Slice.len; rfl
+    core.slice.Slice.len v = .ok (Std.Slice.len v) := by
+  unfold core.slice.Slice.len; rfl
 
 /-- `RATE % 8#usize = .ok 0#usize` whenever `RATE.val % 8 = 0`. -/
 private theorem rate_mod_8_eq_ok (RATE : Std.Usize) (h : RATE.val % 8 = 0) :

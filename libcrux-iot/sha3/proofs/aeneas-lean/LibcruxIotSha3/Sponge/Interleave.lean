@@ -180,7 +180,7 @@ theorem lane.Lane2U32.interleave_spec (self : lane.Lane2U32) :
   unfold lane.Lane2U32.interleave
   unfold libcrux_secrets.U32.Insts.Libcrux_secretsIntCastOps.as_u64
   unfold libcrux_secrets.U64.Insts.Libcrux_secretsIntCastOps.as_u32
-  unfold lane.Lane2U32.Insts.Core_modelsOpsIndexIndexUsizeU32.index
+  unfold lane.Lane2U32.Insts.CoreOpsIndexIndexUsizeU32.index
   unfold lane.Lane2U32.from_ints
   hax_mvcgen
   all_goals

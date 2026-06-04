@@ -40,7 +40,7 @@ per-closure purity lemmas (one for each of θ's 3, ρ/π/χ's 1 closures). -/
     is invariant; the result list is `acc ++ l.map f`. -/
 private theorem createi_foldlM_pure_aux
     {T F : Type}
-    (inst : core_models.ops.function.FnMut F Std.Usize T) (c : F) (f : Nat → T)
+    (inst : core.ops.function.FnMut F Std.Usize T) (c : F) (f : Nat → T)
     (l : List Nat) (acc : List T)
     (hpure : ∀ k ∈ l,
       inst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c)) :
@@ -67,7 +67,7 @@ private theorem createi_foldlM_pure_aux
     `createi_pure_spec` (Triple form). -/
 theorem createi_pure_eq
     {T F : Type} (N : Std.Usize)
-    (inst : core_models.ops.function.FnMut F Std.Usize T) (c : F) (f : Nat → T)
+    (inst : core.ops.function.FnMut F Std.Usize T) (c : F) (f : Nat → T)
     (hpure : ∀ k : Nat, k < N.val →
       inst.call_mut c ⟨BitVec.ofNat _ k⟩ = .ok (f k, c)) :
     createi N inst c =
@@ -79,7 +79,7 @@ theorem createi_pure_eq
   have h_fold :=
     createi_foldlM_pure_aux inst c f (List.range N.val) [] hf
   simp only [List.nil_append] at h_fold
-  unfold createi core_models.array.from_fn rust_primitives.slice.array_from_fn
+  unfold createi core.array.from_fn rust_primitives.slice.array_from_fn
   split
   · rename_i e heq
     rw [h_fold] at heq; exact absurd heq (by simp)
@@ -104,7 +104,7 @@ in `keccak_f.theta` (3 calls) and `keccak_f.{rho,pi,chi}` (1 call each). -/
 @[spec]
 theorem createi_pure_spec
     {T F : Type} [Inhabited T] (N : Std.Usize)
-    (inst : core_models.ops.function.FnMut F Std.Usize T) (c : F) (f : Nat → T)
+    (inst : core.ops.function.FnMut F Std.Usize T) (c : F) (f : Nat → T)
     (hpure : ∀ k : Nat, k < N.val →
       ⦃ ⌜ True ⌝ ⦄
       inst.call_mut c ⟨BitVec.ofNat _ k⟩
@@ -155,10 +155,10 @@ private theorem keccak_f_get_spec
 theorem theta_closure_call_mut_spec
     (state : Std.Array Std.U64 25#usize) (k : Std.Usize) (hk : k.val < 5) :
     ⦃ ⌜ True ⌝ ⦄
-    keccak_f.theta.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+    keccak_f.theta.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
       state k
     ⦃ ⇓ r => ⌜ r = (theta_closure_c_at state k.val, state) ⌝ ⦄ := by
-  unfold keccak_f.theta.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+  unfold keccak_f.theta.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
         theta_closure_c_at
   hax_mvcgen
   all_goals (first | scalar_tac | (simp; scalar_tac)
@@ -176,10 +176,10 @@ def theta_closure_1_d_at (c : Std.Array Std.U64 5#usize) (k : Nat) :
 theorem theta_closure_1_call_mut_spec
     (c : Std.Array Std.U64 5#usize) (k : Std.Usize) (hk : k.val < 5) :
     ⦃ ⌜ True ⌝ ⦄
-    keccak_f.theta.closure_1.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+    keccak_f.theta.closure_1.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
       c k
     ⦃ ⇓ r => ⌜ r = (theta_closure_1_d_at c k.val, c) ⌝ ⦄ := by
-  unfold keccak_f.theta.closure_1.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+  unfold keccak_f.theta.closure_1.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
         theta_closure_1_d_at
   hax_mvcgen
   all_goals (first | scalar_tac
@@ -203,10 +203,10 @@ theorem theta_closure_2_call_mut_spec
     (sd : Std.Array Std.U64 25#usize × Std.Array Std.U64 5#usize)
     (k : Std.Usize) (hk : k.val < 25) :
     ⦃ ⌜ True ⌝ ⦄
-    keccak_f.theta.closure_2.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+    keccak_f.theta.closure_2.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
       sd k
     ⦃ ⇓ r => ⌜ r = (theta_closure_2_at sd k.val, sd) ⌝ ⦄ := by
-  unfold keccak_f.theta.closure_2.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+  unfold keccak_f.theta.closure_2.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
         theta_closure_2_at
   hax_mvcgen
   all_goals (first | scalar_tac | (simp; scalar_tac)
@@ -223,10 +223,10 @@ def rho_closure_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
 theorem rho_closure_call_mut_spec
     (state : Std.Array Std.U64 25#usize) (k : Std.Usize) (hk : k.val < 25) :
     ⦃ ⌜ True ⌝ ⦄
-    keccak_f.rho.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+    keccak_f.rho.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
       state k
     ⦃ ⇓ r => ⌜ r = (rho_closure_at state k.val, state) ⌝ ⦄ := by
-  unfold keccak_f.rho.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+  unfold keccak_f.rho.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
         rho_closure_at
   hax_mvcgen
   all_goals (first | scalar_tac
@@ -247,10 +247,10 @@ def pi_closure_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
 theorem pi_closure_call_mut_spec
     (state : Std.Array Std.U64 25#usize) (k : Std.Usize) (hk : k.val < 25) :
     ⦃ ⌜ True ⌝ ⦄
-    keccak_f.pi.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+    keccak_f.pi.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
       state k
     ⦃ ⇓ r => ⌜ r = (pi_closure_at state k.val, state) ⌝ ⦄ := by
-  unfold keccak_f.pi.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+  unfold keccak_f.pi.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
         pi_closure_at
   hax_mvcgen
   all_goals (first | scalar_tac | (simp; scalar_tac)
@@ -273,10 +273,10 @@ def chi_closure_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
 theorem chi_closure_call_mut_spec
     (state : Std.Array Std.U64 25#usize) (k : Std.Usize) (hk : k.val < 25) :
     ⦃ ⌜ True ⌝ ⦄
-    keccak_f.chi.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+    keccak_f.chi.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
       state k
     ⦃ ⇓ r => ⌜ r = (chi_closure_at state k.val, state) ⌝ ⦄ := by
-  unfold keccak_f.chi.closure.Insts.Core_modelsOpsFunctionFnMutTupleUsizeU64.call_mut
+  unfold keccak_f.chi.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
         chi_closure_at
   hax_mvcgen
   all_goals (first
@@ -426,7 +426,7 @@ private theorem get_with_zeta_spec
         (Q.1 v).down) :
     ⦃ ⌜ True ⌝ ⦄ state.KeccakState.get_with_zeta s i j zeta ⦃ Q ⦄ := by
   unfold state.KeccakState.get_with_zeta
-    lane.Lane2U32.Insts.Core_modelsOpsIndexIndexUsizeU32.index
+    lane.Lane2U32.Insts.CoreOpsIndexIndexUsizeU32.index
   mvcgen
   all_goals first | scalar_tac | (
     intros
@@ -442,13 +442,13 @@ private theorem lane_index_spec
     (hi : i.val < 2)
     (hpost : ∀ v : Std.U32, v = l.val[i.val]! → (Q.1 v).down) :
     ⦃ ⌜ True ⌝ ⦄
-    lane.Lane2U32.Insts.Core_modelsOpsIndexIndexUsizeU32.index l i
+    lane.Lane2U32.Insts.CoreOpsIndexIndexUsizeU32.index l i
     ⦃ Q ⦄ := by
-  unfold lane.Lane2U32.Insts.Core_modelsOpsIndexIndexUsizeU32.index
+  unfold lane.Lane2U32.Insts.CoreOpsIndexIndexUsizeU32.index
   mvcgen
   all_goals first | scalar_tac | (intros; apply hpost _ ‹_›)
 
-/-- `core_models.num.U32.rotate_left` returns the bit-rotated value. (Local
+/-- `core.num.U32.rotate_left` returns the bit-rotated value. (Local
     re-statement of the spec in `CoreModels/Specs.lean` for downstream
     consumers that haven't yet picked up the updated rust-core-models pin.) -/
 @[spec]
@@ -456,14 +456,14 @@ private theorem rotate_left_u32_spec
     (x : Std.U32) (n : Std.U32) {Q}
     (hpost : ∀ v : Std.U32, v.bv = x.bv.rotateLeft n.val → (Q.1 v).down) :
     ⦃ ⌜ True ⌝ ⦄
-    core_models.num.U32.rotate_left x n
+    core.num.U32.rotate_left x n
     ⦃ Q ⦄ := by
-  unfold core_models.num.U32.rotate_left
+  unfold core.num.U32.rotate_left
     rust_primitives.arithmetic.rotate_left_u32
   mvcgen [Std.UScalar.rotate_left]
   apply hpost _ rfl
 
-/-- `core_models.num.U64.rotate_left` returns the bit-rotated value. Same
+/-- `core.num.U64.rotate_left` returns the bit-rotated value. Same
     shape as `rotate_left_u32_spec`; used on the spec side of
     `theta_lift_spec` for the 5 ρ-style rotations in `theta_unrolled`. -/
 @[spec]
@@ -471,9 +471,9 @@ private theorem rotate_left_u64_spec
     (x : Std.U64) (n : Std.U32) {Q}
     (hpost : ∀ v : Std.U64, v.bv = x.bv.rotateLeft n.val → (Q.1 v).down) :
     ⦃ ⌜ True ⌝ ⦄
-    core_models.num.U64.rotate_left x n
+    core.num.U64.rotate_left x n
     ⦃ Q ⦄ := by
-  unfold core_models.num.U64.rotate_left
+  unfold core.num.U64.rotate_left
     rust_primitives.arithmetic.rotate_left_u64
   mvcgen [Std.UScalar.rotate_left]
   apply hpost _ rfl
