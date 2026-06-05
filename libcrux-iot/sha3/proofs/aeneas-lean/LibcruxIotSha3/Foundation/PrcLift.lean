@@ -935,6 +935,19 @@ theorem lift_theta_applied_bv_24 (s : state.KeccakState) :
                    ((s.st.val[24]!).val[1]! ^^^ (s.d.val[4]!).val[1]!).bv := by
   unfold lift_theta_applied; rfl
 
+/-! ### Set-peeling lemmas for `List` (`getElem!` over `set`)
+
+Replacements for the upstream `List.getElem!_set`/`getElem!_set_ne` that
+were removed in the migration. Derived from `List.getElem?_set`. -/
+private theorem list_getElem!_set_ne {α} [Inhabited α] {l : List α} {i j : Nat}
+    {a : α} (h : i ≠ j) : (l.set i a)[j]! = l[j]! := by
+  simp only [List.getElem!_eq_getElem?_getD, List.getElem?_set, if_neg h]
+
+private theorem list_getElem!_set_eq {α} [Inhabited α] {l : List α} {i : Nat}
+    {a : α} (h : i < l.length) : (l.set i a)[i]! = a := by
+  simp only [List.getElem!_eq_getElem?_getD, List.getElem?_set, if_pos rfl, h,
+    if_true, Option.getD_some]
+
 /-! ## Bridge 1: `prc_lift_spec`
 
 Couples the impl `keccakf1600_round0_pi_rho_chi_{1,2}` chain to the spec
@@ -955,7 +968,45 @@ theorem prc_lift_spec (s : state.KeccakState) (hi_lt : s.i.val < 24) :
           let a3 ← keccak_f.chi a2
           let r_spec ← keccak_f.iota a3 s.i
           pure (r_spec = lift_perm r_impl impl_perm impl_swap)).holds ⌝ ⦄ := by
-  -- TODO(new-aeneas): List.getElem!_set/List.getElem!_set_ne removed.
-  sorry
+  unfold keccak.keccakf1600_round0_pi_rho_chi_1
+  unfold keccak.keccakf1600_round0_pi_rho_chi_2
+  hax_mvcgen
+  all_goals try scalar_tac
+  subst_vars
+  rw [prc_spec_eq_composed]
+  casesm* _ ∧ _
+  have hlane : ∀ (L : lane.Lane2U32), L.val.length = 2 := fun L => L.2
+  have hss : (↑s.st : List lane.Lane2U32).length = 25 := s.st.2
+  apply Subtype.ext
+  unfold prc_spec lift_perm impl_perm impl_swap lift_lane_maybe_swap transpose_perm
+  simp (config := { decide := true }) only [Std.Array.make, List.ofFn_succ, List.ofFn_zero,
+    Fin.val_succ, Fin.val_zero, Nat.succ_eq_add_one, Nat.zero_add, Nat.reduceAdd, Nat.reduceMul,
+    Nat.reduceDiv, Nat.reduceMod, reduceIte]
+  repeat' (first | rfl | (apply List.cons_eq_cons.mpr; refine ⟨?_, ?_⟩))
+  all_goals (
+    apply Std.U64.bv_eq_imp_eq
+    simp (config := { decide := true }) only
+      [*, apply_5_writes, lift_lane,
+       list_getElem!_set_ne, list_getElem!_set_eq, List.length_set,
+       Std.Array.set_val_eq, hlane, hss,
+       show ((0#usize : Std.Usize) : Nat) = 0 from rfl,
+       show ((1#usize : Std.Usize) : Nat) = 1 from rfl]
+    simp only [lift_theta_applied_bv_0, lift_theta_applied_bv_1, lift_theta_applied_bv_2,
+      lift_theta_applied_bv_3, lift_theta_applied_bv_4, lift_theta_applied_bv_5,
+      lift_theta_applied_bv_6, lift_theta_applied_bv_7, lift_theta_applied_bv_8,
+      lift_theta_applied_bv_9, lift_theta_applied_bv_10, lift_theta_applied_bv_11,
+      lift_theta_applied_bv_12, lift_theta_applied_bv_13, lift_theta_applied_bv_14,
+      lift_theta_applied_bv_15, lift_theta_applied_bv_16, lift_theta_applied_bv_17,
+      lift_theta_applied_bv_18, lift_theta_applied_bv_19, lift_theta_applied_bv_20,
+      lift_theta_applied_bv_21, lift_theta_applied_bv_22, lift_theta_applied_bv_23,
+      lift_theta_applied_bv_24,
+      Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, rot32, rot64]
+    simp only [Std.UScalarTy.U64_numBits_eq,
+      rot_0, rot_1, rot_2, rot_3, rot_6, rot_8, rot_10,
+      rot_14, rot_15, rot_18, rot_20, rot_21, rot_25, rot_27,
+      rot_28, rot_36, rot_39, rot_41, rot_43, rot_44, rot_45,
+      rot_55, rot_56, rot_61, rot_62,
+      ← lift_xor, ← lift_and, ← lift_not, ← lift_chi,
+      ← rc_equiv _ hi_lt])
 
 end libcrux_iot_sha3.Foundation
