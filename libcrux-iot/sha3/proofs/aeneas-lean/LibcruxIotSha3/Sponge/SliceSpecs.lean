@@ -425,4 +425,27 @@ theorem core_models_try_from_unwrap_spec
   rw [h_eq]
   simp [Triple, WP.wp, PredTrans.apply]
 
+/-! ## `!`-valued index override for the sponge layer.
+
+The current Aeneas `Array.index_usize_spec` post is the total `getElem`
+`v.val[i]`, whereas the sponge proofs are written with `getElem!`. The
+sponge accessors (`get_lane`/`set_lane`/the `Lane2U32` `Index` instance) all
+unfold to `Array.index_usize`, so a single high-priority `@[spec]` override
+of the index post (which `mvcgen` prefers over the auto-generated default)
+makes every unfolded read come out as `!` — reproducing the form the
+pre-migration proofs expect, with no per-site bridging. `@[spec high]`
+ensures it wins over the Aeneas default without disabling it (disabling
+would just make `mvcgen` unfold `index_usize` to the total form instead). -/
+@[spec high]
+theorem index_usize_bang_spec {α : Type _} [Inhabited α] {n : Std.Usize}
+    (v : Std.Array α n) (i : Std.Usize) (hbound : i.val < v.length) :
+    ⦃ ⌜ True ⌝ ⦄ v.index_usize i ⦃ ⇓ x => ⌜ x = v.val[i.val]! ⌝ ⦄ := by
+  have h_idx : i.val < v.val.length := hbound
+  have hbang : v.val[i.val]! = v.val[i.val]'h_idx := by
+    rw [List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem h_idx]; rfl
+  obtain ⟨x, hxok, hxval⟩ :=
+    Aeneas.Std.WP.spec_imp_exists (Std.Array.index_usize_spec v i hbound)
+  have hpost : x = v.val[i.val]! := by rw [hxval, hbang]
+  simp [Triple, WP.wp, PredTrans.apply, hxok, hpost]
+
 end libcrux_iot_sha3.Sponge
