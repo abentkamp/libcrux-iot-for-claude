@@ -136,8 +136,65 @@ theorem IteratorRange_next_spec_usize (i e : Std.Usize) {Q}
       CoreModels.core.Usize.Insts.CoreIterRangeStep
       { start := i, «end» := e }
     ⦃ Q ⦄ := by
-  -- TODO(new-aeneas): API drift.
-  sorry
+  rcases lt_or_ge i.val e.val with hlt | hge
+  · -- i < e case: derive an `ok` form, then close
+    have hUB : i.val + 1 < 2 ^ System.Platform.numBits := by
+      have he := e.hBounds
+      rcases System.Platform.numBits_eq with hN | hN <;>
+        simp only [Std.UScalarTy.Usize_numBits_eq, hN] at he <;>
+        rw [hN] <;> omega
+    have hno_ovf : BitVec.uaddOverflow i.bv (1#System.Platform.numBits) = false := by
+      have h1 : (1#System.Platform.numBits : BitVec _).toNat = 1 := by
+        rcases System.Platform.numBits_eq with h | h <;> rw [h] <;> rfl
+      simp [BitVec.uaddOverflow, h1, hUB]
+    have h_eq :
+        CoreModels.core.iter.range.IteratorRange.next
+          CoreModels.core.Usize.Insts.CoreIterRangeStep { start := i, «end» := e }
+        = .ok (CoreModels.core.option.Option.Some i,
+               { start := ⟨i.bv + 1#System.Platform.numBits⟩, «end» := e }) := by
+      unfold CoreModels.core.iter.range.IteratorRange.next
+      simp only [CoreModels.core.Usize.Insts.CoreIterRangeStep,
+                 CoreModels.core.Usize.Insts.CoreCmpPartialOrdUsize,
+                 CoreModels.core.mkUPartialOrd,
+                 CoreModels.core.Usize.Insts.CoreCloneClone,
+                 CoreModels.core.Usize.Insts.CoreCloneClone.clone,
+                 CoreModels.core.Usize.Insts.CoreIterRangeStep.forward_checked,
+                 CoreModels.core.convert.TryFromUTInfallible.Blanket.try_from,
+                 CoreModels.core.convert.From.Blanket,
+                 CoreModels.core.convert.From.Blanket.from,
+                 CoreModels.core.num.Usize.checked_add,
+                 CoreModels.core.num.Usize.overflowing_add,
+                 CoreModels.rust_primitives.arithmetic.overflowing_add_usize,
+                 Std.UScalar.overflowing_add]
+      have hcmp : compare i.val e.val = Ordering.lt := by
+        rw [Nat.compare_eq_lt]; exact hlt
+      simp [hcmp, hno_ovf]
+    rw [h_eq]
+    have h_step : (⟨i.bv + 1#System.Platform.numBits⟩ : Std.Usize).val = i.val + 1 := by
+      show (i.bv + 1#System.Platform.numBits).toNat = i.val + 1
+      rw [BitVec.toNat_add]
+      have h1 : (1#System.Platform.numBits : BitVec _).toNat = 1 := by
+        rcases System.Platform.numBits_eq with h | h <;> rw [h] <;> rfl
+      rw [h1]
+      show (i.bv.toNat + 1) % _ = i.val + 1
+      exact Nat.mod_eq_of_lt hUB
+    simp [Triple, WP.wp, PredTrans.apply]
+    exact h_lt hlt _ h_step
+  · -- i ≥ e case
+    have h_eq :
+        CoreModels.core.iter.range.IteratorRange.next
+          CoreModels.core.Usize.Insts.CoreIterRangeStep { start := i, «end» := e }
+        = .ok (CoreModels.core.option.Option.None, { start := i, «end» := e }) := by
+      unfold CoreModels.core.iter.range.IteratorRange.next
+      simp only [CoreModels.core.Usize.Insts.CoreIterRangeStep,
+                 CoreModels.core.Usize.Insts.CoreCmpPartialOrdUsize,
+                 CoreModels.core.mkUPartialOrd]
+      have hcmp : compare i.val e.val ≠ Ordering.lt := by
+        intro h; rw [Nat.compare_eq_lt] at h; omega
+      cases h : compare i.val e.val <;> simp_all
+    rw [h_eq]
+    simp [Triple, WP.wp, PredTrans.apply]
+    exact h_ge hge
 /-! ## `Usize` loop-over-range spec (analog of `loop_range_spec_i32`)
 
 Specialized to `loop` over `core.ops.range.Range Usize`. Same shape as the
@@ -302,8 +359,42 @@ private theorem IteratorRange_next_eq_some_usize
           CoreModels.core.ops.range.Range Std.Usize) =
         .ok (CoreModels.core.option.Option.Some kU,
              { start := kU', «end» := 24#usize }) := by
-  -- TODO(new-aeneas): API drift.
-  sorry
+  have hUB : kU.val + 1 < 2 ^ System.Platform.numBits := by
+    have h := kU.hBounds
+    rcases System.Platform.numBits_eq with hN | hN <;>
+      simp only [Std.UScalarTy.Usize_numBits_eq, hN] at h <;>
+      rw [hN] <;> omega
+  refine ⟨⟨kU.bv + 1#usize.bv⟩, ?_, ?_⟩
+  · show (kU.bv + (1#usize).bv).toNat = kU.val + 1
+    rw [BitVec.toNat_add]
+    have h1 : (1#usize).bv.toNat = 1 := by decide
+    rw [h1]
+    show (kU.bv.toNat + 1) % _ = kU.val + 1
+    apply Nat.mod_eq_of_lt
+    exact hUB
+  unfold CoreModels.core.iter.range.IteratorRange.next
+  simp only [CoreModels.core.Usize.Insts.CoreIterRangeStep,
+             CoreModels.core.Usize.Insts.CoreCmpPartialOrdUsize,
+             CoreModels.core.mkUPartialOrd,
+             CoreModels.core.Usize.Insts.CoreCloneClone,
+             CoreModels.core.Usize.Insts.CoreCloneClone.clone,
+             CoreModels.core.Usize.Insts.CoreIterRangeStep.forward_checked,
+             CoreModels.core.convert.TryFromUTInfallible.Blanket.try_from,
+             CoreModels.core.convert.From.Blanket,
+             CoreModels.core.convert.From.Blanket.from,
+             CoreModels.core.num.Usize.checked_add,
+             CoreModels.core.num.Usize.overflowing_add,
+             CoreModels.rust_primitives.arithmetic.overflowing_add_usize,
+             Std.UScalar.overflowing_add]
+  have hcmp : compare kU.val 24 = Ordering.lt := by
+    rw [Nat.compare_eq_lt]; exact hkU
+  have h24 : (24#usize : Std.Usize).val = 24 := rfl
+  simp only [h24, hcmp]
+  have hno_ovf : BitVec.uaddOverflow kU.bv (1#System.Platform.numBits) = false := by
+    have h1 : (1#System.Platform.numBits : BitVec _).toNat = 1 := by
+      rcases System.Platform.numBits_eq with h | h <;> rw [h] <;> rfl
+    simp [BitVec.uaddOverflow, h1, hUB]
+  simp [hno_ovf]
 
 /-- Direct equality form of `IteratorRange.next` when `kU.val ≥ 24`:
     returns `None`. -/
@@ -315,8 +406,14 @@ private theorem IteratorRange_next_eq_none_usize
         CoreModels.core.ops.range.Range Std.Usize) =
       .ok (CoreModels.core.option.Option.None,
            { start := kU, «end» := 24#usize }) := by
-  -- TODO(new-aeneas): API drift.
-  sorry
+  unfold CoreModels.core.iter.range.IteratorRange.next
+  simp only [CoreModels.core.Usize.Insts.CoreIterRangeStep,
+             CoreModels.core.Usize.Insts.CoreCmpPartialOrdUsize,
+             CoreModels.core.mkUPartialOrd]
+  have hkU' : (24#usize : Std.Usize).val = 24 := rfl
+  have hcmp : compare kU.val 24 ≠ Ordering.lt := by
+    intro h; rw [Nat.compare_eq_lt] at h; omega
+  cases h : compare kU.val 24 <;> simp_all
 
 /-- `roundOfNat k.val ... = kU` when `kU.val = k.val`: a `Std.Usize`
     constructed from its `.val` round-trips through `roundOfNat`. -/
