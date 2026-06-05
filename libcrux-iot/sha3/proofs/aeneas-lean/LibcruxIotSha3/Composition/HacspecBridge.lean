@@ -485,9 +485,147 @@ private theorem keccak_f_loop_eq_aux (s : Std.Array Std.U64 25#usize) :
       spec_chain_hacspec s k = .ok acc →
       keccak_f.keccak_f_loop { start := kU, «end» := 24#usize } acc =
         spec_chain_hacspec s 24 := by
-  -- TODO(new-aeneas): the iterator-step + body-chain reduction needs
-  -- careful do-notation/let-pattern unfolding; left sorried for now.
-  sorry
+  intro n
+  induction n with
+  | zero =>
+    intro k kU acc h_kU h_kn h_chain
+    have hk : k = 24 := by omega
+    subst hk
+    have h_kU_ge : kU.val ≥ 24 := by rw [h_kU]
+    unfold keccak_f.keccak_f_loop
+    rw [loop.eq_def]
+    unfold keccak_f.keccak_f_loop.body
+    dsimp only
+    rw [show (CoreModels.core.ops.range.Range.Insts.CoreIterTraitsIteratorIterator.next
+              CoreModels.core.Usize.Insts.CoreIterRangeStep
+              ({ start := kU, «end» := 24#usize } :
+                CoreModels.core.ops.range.Range Std.Usize)) =
+          CoreModels.core.iter.range.IteratorRange.next
+            CoreModels.core.Usize.Insts.CoreIterRangeStep
+            { start := kU, «end» := 24#usize } from rfl]
+    rw [IteratorRange_next_eq_none_usize kU h_kU_ge]
+    simp
+    exact h_chain.symm
+  | succ n ih =>
+    intro k kU acc h_kU h_kn h_chain
+    have h_k_lt : k < 24 := by omega
+    have h_kU_lt : kU.val < 24 := by rw [h_kU]; exact h_k_lt
+    obtain ⟨kU', h_kU'_val, h_iter⟩ := IteratorRange_next_eq_some_usize kU h_kU_lt
+    -- Use `spec_chain_hacspec_succ` to connect to `spec_chain_hacspec s (k+1)`.
+    have h_succ := spec_chain_hacspec_succ s k
+    rw [h_chain] at h_succ
+    simp [spec_round_step_hacspec_at, h_k_lt] at h_succ
+    have h_round : roundOfNat k (by omega) = kU := by
+      subst h_kU
+      exact roundOfNat_val_eq kU h_kU_lt
+    rw [h_round] at h_succ
+    -- Case split on `spec_round_step_hacspec acc kU`.
+    cases h_step : spec_round_step_hacspec acc kU with
+    | ok acc' =>
+      rw [h_step] at h_succ
+      -- The body chain evaluates to `ok (cont (iter', acc'))`.
+      have hbody_ok :
+          keccak_f.keccak_f_loop.body { start := kU, «end» := 24#usize } acc =
+          .ok (.cont ({ start := kU', «end» := 24#usize }, acc')) := by
+        unfold keccak_f.keccak_f_loop.body
+        rw [show (CoreModels.core.ops.range.Range.Insts.CoreIterTraitsIteratorIterator.next
+                  CoreModels.core.Usize.Insts.CoreIterRangeStep
+                  ({ start := kU, «end» := 24#usize } :
+                    CoreModels.core.ops.range.Range Std.Usize)) =
+              CoreModels.core.iter.range.IteratorRange.next
+                CoreModels.core.Usize.Insts.CoreIterRangeStep
+                { start := kU, «end» := 24#usize } from rfl]
+        rw [h_iter]
+        have h_body_eq := loop_body_some_eq acc kU { start := kU', «end» := 24#usize }
+        change (do
+                  let a ← keccak_f.theta acc
+                  let a1 ← keccak_f.rho a
+                  let a2 ← keccak_f.pi a1
+                  let a3 ← keccak_f.chi a2
+                  let state1 ← keccak_f.iota a3 kU
+                  Aeneas.Std.Result.ok
+                    (cont ({ start := kU', «end» := 24#usize }, state1) :
+                      ControlFlow ((CoreModels.core.ops.range.Range Std.Usize) ×
+                        (Std.Array Std.U64 25#usize)) (Std.Array Std.U64 25#usize)))
+                = _
+        rw [h_body_eq, h_step]; rfl
+      have ih' := ih (k + 1) kU' acc'
+                     (by rw [h_kU'_val, h_kU]) (by omega) h_succ
+      -- Unfold loop once and use hbody_ok + IH.
+      unfold keccak_f.keccak_f_loop
+      rw [loop.eq_def]
+      dsimp only
+      rw [hbody_ok]
+      simp only [keccak_f.keccak_f_loop] at ih'
+      exact ih'
+    | fail e =>
+      rw [h_step] at h_succ
+      have hbody_fail :
+          keccak_f.keccak_f_loop.body { start := kU, «end» := 24#usize } acc =
+          .fail e := by
+        unfold keccak_f.keccak_f_loop.body
+        rw [show (CoreModels.core.ops.range.Range.Insts.CoreIterTraitsIteratorIterator.next
+                  CoreModels.core.Usize.Insts.CoreIterRangeStep
+                  ({ start := kU, «end» := 24#usize } :
+                    CoreModels.core.ops.range.Range Std.Usize)) =
+              CoreModels.core.iter.range.IteratorRange.next
+                CoreModels.core.Usize.Insts.CoreIterRangeStep
+                { start := kU, «end» := 24#usize } from rfl]
+        rw [h_iter]
+        have h_body_eq := loop_body_some_eq acc kU { start := kU', «end» := 24#usize }
+        change (do
+                  let a ← keccak_f.theta acc
+                  let a1 ← keccak_f.rho a
+                  let a2 ← keccak_f.pi a1
+                  let a3 ← keccak_f.chi a2
+                  let state1 ← keccak_f.iota a3 kU
+                  Aeneas.Std.Result.ok
+                    (cont ({ start := kU', «end» := 24#usize }, state1) :
+                      ControlFlow ((CoreModels.core.ops.range.Range Std.Usize) ×
+                        (Std.Array Std.U64 25#usize)) (Std.Array Std.U64 25#usize)))
+                = _
+        rw [h_body_eq, h_step]; rfl
+      unfold keccak_f.keccak_f_loop
+      rw [loop.eq_def]
+      dsimp only
+      rw [hbody_fail]
+      have h_fail24 := spec_chain_hacspec_fail_mono s (k + 1) e h_succ (24 - (k + 1))
+      rw [show k + 1 + (24 - (k + 1)) = 24 from by omega] at h_fail24
+      exact h_fail24.symm
+    | div =>
+      rw [h_step] at h_succ
+      have hbody_div :
+          keccak_f.keccak_f_loop.body { start := kU, «end» := 24#usize } acc =
+          .div := by
+        unfold keccak_f.keccak_f_loop.body
+        rw [show (CoreModels.core.ops.range.Range.Insts.CoreIterTraitsIteratorIterator.next
+                  CoreModels.core.Usize.Insts.CoreIterRangeStep
+                  ({ start := kU, «end» := 24#usize } :
+                    CoreModels.core.ops.range.Range Std.Usize)) =
+              CoreModels.core.iter.range.IteratorRange.next
+                CoreModels.core.Usize.Insts.CoreIterRangeStep
+                { start := kU, «end» := 24#usize } from rfl]
+        rw [h_iter]
+        have h_body_eq := loop_body_some_eq acc kU { start := kU', «end» := 24#usize }
+        change (do
+                  let a ← keccak_f.theta acc
+                  let a1 ← keccak_f.rho a
+                  let a2 ← keccak_f.pi a1
+                  let a3 ← keccak_f.chi a2
+                  let state1 ← keccak_f.iota a3 kU
+                  Aeneas.Std.Result.ok
+                    (cont ({ start := kU', «end» := 24#usize }, state1) :
+                      ControlFlow ((CoreModels.core.ops.range.Range Std.Usize) ×
+                        (Std.Array Std.U64 25#usize)) (Std.Array Std.U64 25#usize)))
+                = _
+        rw [h_body_eq, h_step]; rfl
+      unfold keccak_f.keccak_f_loop
+      rw [loop.eq_def]
+      dsimp only
+      rw [hbody_div]
+      have h_div24 := spec_chain_hacspec_div_mono s (k + 1) h_succ (24 - (k + 1))
+      rw [show k + 1 + (24 - (k + 1)) = 24 from by omega] at h_div24
+      exact h_div24.symm
 
 /-- **Loop bridge**: the hacspec `keccak_f.keccak_f` function equals the
     `Nat.fold 24` chain `spec_chain_hacspec s 24`.
