@@ -13,6 +13,8 @@ namespace libcrux_iot_sha3.Foundation
 
 set_option mvcgen.warning false
 
+attribute [local spec] Aeneas.Std.uncurry
+
 attribute [local irreducible] spread_to_even lift_lane_bv
 
 /-! ## Round-2 per-c-cell sub-function specs
@@ -146,8 +148,15 @@ private theorem theta_d_spec_2 (s : state.KeccakState) :
           s.c.val[3]!.val[0]! ^^^ rot32 s.c.val[0]!.val[1]! 1 ∧
         r.d.val[4]!.val[1]! =
           s.c.val[3]!.val[1]! ^^^ s.c.val[0]!.val[0]! ⌝ ⦄ := by
-  -- TODO(new-aeneas): see theta_d TODO in ThetaLiftDefs.
-  sorry
+  unfold keccak.keccakf1600_round2_theta_d
+  mvcgen
+  all_goals first
+    | scalar_tac
+    | (refine ⟨trivial, trivial, trivial, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+       (apply Std.U32.bv_eq_imp_eq
+        simp_all [WP.uncurry', Std.Array.set_val_eq,
+                  Std.UScalar.bv_xor, rot32, Std.UScalar.rotate_left]) <;>
+       scalar_tac)
 
 set_option maxHeartbeats 4000000 in
 theorem theta_comp_spec_local_2 (s : state.KeccakState) :
