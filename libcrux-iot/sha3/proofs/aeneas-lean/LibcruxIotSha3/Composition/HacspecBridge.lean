@@ -485,7 +485,8 @@ private theorem keccak_f_loop_eq_aux (s : Std.Array Std.U64 25#usize) :
       spec_chain_hacspec s k = .ok acc →
       keccak_f.keccak_f_loop { start := kU, «end» := 24#usize } acc =
         spec_chain_hacspec s 24 := by
-  -- TODO(new-aeneas): depends on stubbed IteratorRange helpers above.
+  -- TODO(new-aeneas): the iterator-step + body-chain reduction needs
+  -- careful do-notation/let-pattern unfolding; left sorried for now.
   sorry
 
 /-- **Loop bridge**: the hacspec `keccak_f.keccak_f` function equals the
