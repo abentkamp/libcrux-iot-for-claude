@@ -164,8 +164,38 @@ theorem deinterleave_bv_lift_eq (even_bits odd_bits : BitVec 32) :
   simp only [deinterleave_bv, lift_lane_bv, spread_to_even]
   bv_decide
 
+/-- Bridge: `0#32 ++ x` (BV64) equals `x.setWidth 64`. Used to feed
+    the impl's `as_u64` cast (which Lean computes as `0#32 ++ x`) into
+    `bv_decide` (which doesn't natively destructure `BitVec.append`). -/
+private theorem zero_append_eq_setWidth_32 (x : BitVec 32) :
+    (0#32 ++ x : BitVec 64) = x.setWidth 64 := by
+  apply BitVec.eq_of_toNat_eq
+  rw [BitVec.toNat_append, BitVec.toNat_setWidth]
+  have hbnd : x.toNat < 2 ^ 64 := by
+    have := x.isLt; omega
+  simp
+  omega
 
-/-! Remaining content sorried due to bv_decide opaque-append issue. -/
+/-- Bridge: `x ++ 0#32` (BV64) equals `(x.setWidth 64) <<< 32`. -/
+private theorem append_zero_32_eq_shiftLeft_setWidth (x : BitVec 32) :
+    (x ++ 0#32 : BitVec 64) = (x.setWidth 64) <<< 32 := by
+  apply BitVec.eq_of_toNat_eq
+  rw [BitVec.toNat_append, BitVec.toNat_shiftLeft, BitVec.toNat_setWidth]
+  simp [Nat.shiftLeft_eq]
+  have hbnd : x.toNat < 2 ^ 32 := x.isLt
+  have h64 : x.toNat * 2 ^ 32 < 2 ^ 64 := by
+    have : x.toNat * 2^32 < 2^32 * 2^32 :=
+      Nat.mul_lt_mul_of_lt_of_le hbnd (le_refl _) (by decide)
+    omega
+  omega
+
+
+/-! Remaining content sorried: `interleave_spec` / `deinterleave_spec`
+    leave the bv_decide goal in a form with both `0#32 ++ x` and
+    `x ++ 0#32` (BV64) — bv_decide treats those as opaque even when
+    the bridge lemmas `zero_append_eq_setWidth_32` and
+    `append_zero_32_eq_shiftLeft_setWidth` are in the simp set, because
+    a sub-step re-introduces the append form. Tactic-fu unfinished. -/
 #exit
 
 end libcrux_iot_sha3.Sponge
