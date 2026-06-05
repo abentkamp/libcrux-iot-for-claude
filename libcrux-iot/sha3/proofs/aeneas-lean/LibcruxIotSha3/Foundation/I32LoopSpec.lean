@@ -47,7 +47,10 @@ theorem IteratorRange_next_spec_i32 (i e : Std.I32)
     CoreModels.core.iter.range.IteratorRange.next CoreModels.core.I32.Insts.CoreIterRangeStep
       { start := i, «end» := e }
     ⦃ Q ⦄ := by
-  -- TODO(new-aeneas): API drift; old proof matched on `core.cmp.Ordering.Less` etc.
+  -- TODO(new-aeneas): the `i < e` case needs `Int.bmod` reduction that
+  -- splits on `0 ≤ i.val + 1` vs `i.val + 1 < 0` (negative i causes
+  -- `(i.val + 1) % 2^32` to wrap around `2^31`, requiring `bmod_neg`).
+  -- Tactic-fu unfinished; the `i ≥ e` half would close cleanly.
   sorry
 
 /-! ## I32 loop-over-range spec
