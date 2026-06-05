@@ -47,11 +47,57 @@ theorem IteratorRange_next_spec_i32 (i e : Std.I32)
     CoreModels.core.iter.range.IteratorRange.next CoreModels.core.I32.Insts.CoreIterRangeStep
       { start := i, «end» := e }
     ⦃ Q ⦄ := by
-  -- TODO(new-aeneas): the `i < e` case needs `Int.bmod` reduction that
-  -- splits on `0 ≤ i.val + 1` vs `i.val + 1 < 0` (negative i causes
-  -- `(i.val + 1) % 2^32` to wrap around `2^31`, requiring `bmod_neg`).
-  -- Tactic-fu unfinished; the `i ≥ e` half would close cleanly.
-  sorry
+  rcases lt_or_ge i.val e.val with hlt | hge
+  · -- i < e: `forward_checked` succeeds with no overflow, start advances by 1.
+    have hcmp : compare i.val e.val = Ordering.lt := Int.compare_eq_lt.mpr hlt
+    have hmin : (-2147483648 : Int) ≤ i.val := by scalar_tac
+    -- the `1#usize`, cast through u32 then hcast to i32, has value 1
+    have h1val : (UScalar.hcast IScalarTy.I32 (UScalar.cast UScalarTy.U32 1#usize)).val = 1 := by
+      native_decide
+    -- the wrapping_add does not overflow: i.val + 1 ∈ [-2^31, 2^31)
+    have hwval : (Std.I32.wrapping_add i
+        (UScalar.hcast IScalarTy.I32 (UScalar.cast UScalarTy.U32 1#usize))).val = i.val + 1 := by
+      rw [Std.I32.wrapping_add_val_eq, h1val, Int.bmod_eq_emod]
+      simp only [Nat.reducePow]
+      split <;> omega
+    -- the same no-overflow fact, in the `bmod` form `simp` exposes
+    have hbmod : ((i.val : Int) + 1).bmod 4294967296 = i.val + 1 := by
+      rw [Int.bmod_eq_emod]; split <;> omega
+    -- `try_from 1#usize` succeeds (1 is in range for u32).
+    have htry : CoreModels.core.U32.Insts.CoreConvertTryFromUsizeTryFromIntError.try_from 1#usize
+        = .ok (CoreModels.core.result.Result.Ok (UScalar.cast UScalarTy.U32 1#usize)) := by
+      unfold CoreModels.core.U32.Insts.CoreConvertTryFromUsizeTryFromIntError.try_from
+      simp [Aeneas.Std.lift]
+      native_decide
+    have h_eq : CoreModels.core.iter.range.IteratorRange.next
+        CoreModels.core.I32.Insts.CoreIterRangeStep { start := i, «end» := e }
+      = .ok (CoreModels.core.option.Option.Some i,
+             { start := Std.I32.wrapping_add i
+                 (UScalar.hcast IScalarTy.I32 (UScalar.cast UScalarTy.U32 1#usize)),
+               «end» := e }) := by
+      unfold CoreModels.core.iter.range.IteratorRange.next
+      simp [CoreModels.core.I32.Insts.CoreCmpPartialOrdI32,
+            CoreModels.core.mkIPartialOrd,
+            CoreModels.core.I32.Insts.CoreCloneClone.clone,
+            CoreModels.core.I32.Insts.CoreIterRangeStep.forward_checked,
+            CoreModels.core.num.I32.wrapping_add,
+            CoreModels.rust_primitives.arithmetic.wrapping_add_i32,
+            Aeneas.Std.lift, hcmp, htry, h1val, hbmod]
+    rw [h_eq]
+    simp [Triple, WP.wp, PredTrans.apply]
+    exact h_lt hlt _ hwval
+  · -- i ≥ e: `next` returns `none`.
+    have h_eq : CoreModels.core.iter.range.IteratorRange.next
+        CoreModels.core.I32.Insts.CoreIterRangeStep { start := i, «end» := e }
+      = .ok (CoreModels.core.option.Option.None, { start := i, «end» := e }) := by
+      unfold CoreModels.core.iter.range.IteratorRange.next
+      simp only [CoreModels.core.I32.Insts.CoreCmpPartialOrdI32,
+                 CoreModels.core.mkIPartialOrd]
+      have hcmp : compare i.val e.val ≠ Ordering.lt := Int.compare_ne_lt.mpr hge
+      cases h : compare i.val e.val <;> simp_all
+    rw [h_eq]
+    simp [Triple, WP.wp, PredTrans.apply]
+    exact h_ge hge
 
 /-! ## I32 loop-over-range spec
 
