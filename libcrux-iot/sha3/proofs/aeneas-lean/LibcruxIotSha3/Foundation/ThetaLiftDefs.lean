@@ -659,7 +659,10 @@ private theorem theta_d_spec (s : state.KeccakState) :
           s.c.val[3]!.val[0]! ^^^ rot32 s.c.val[0]!.val[1]! 1 ∧
         r.d.val[4]!.val[1]! =
           s.c.val[3]!.val[1]! ^^^ s.c.val[0]!.val[0]! ⌝ ⦄ := by
-  -- TODO(new-aeneas): Std.WP.predn removed; goal shape changed.
+  -- TODO(new-aeneas): hax_mvcgen leaves residual goals reading cells from a
+  -- 10-deep chain of `Aeneas.Std.Array.set` applications. The
+  -- `WP.uncurry'`-quantified hyps need destructuring + `set_val_eq` push +
+  -- `List.set_getElem!_{eq,ne}` rewriting to close. Tactic-fu unfinished.
   sorry
 
 /-! ### Composed θ-round spec
