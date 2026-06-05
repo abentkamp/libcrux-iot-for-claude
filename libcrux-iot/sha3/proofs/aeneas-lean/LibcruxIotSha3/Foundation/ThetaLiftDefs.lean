@@ -117,7 +117,7 @@ theorem createi_pure_spec
     fun k hk => result_eq_of_triple (hpure k hk)
   have heq := createi_pure_eq N inst c f hpure_eq
   rw [heq]
-  simp only [Triple, WP.wp]
+  simp only [Triple, WP.wp, PredTrans.apply]
   apply SPred.pure_intro
   intro i hi
   show ((List.range N.val).map f)[i]! = f i
@@ -396,16 +396,6 @@ private theorem set_lane_value_spec
   -- TODO(new-aeneas): Std.WP.predn no longer exists.
   sorry
 
-@[spec]
-private theorem get_with_zeta_spec
-    (s : state.KeccakState) (i j zeta : Std.Usize) {Q}
-    (hi : i.val < 5) (hj : j.val < 5) (hzeta : zeta.val < 2)
-    (hpost : ∀ v : Std.U32, v = (s.st.val[5 * j.val + i.val]!).val[zeta.val]! →
-        (Q.1 v).down) :
-    ⦃ ⌜ True ⌝ ⦄ state.KeccakState.get_with_zeta s i j zeta ⦃ Q ⦄ := by
-  -- TODO(new-aeneas): post-mvcgen goal uses `[ ]` instead of `[ ]!`.
-  sorry
-
 /-- `Lane2U32` array-index returns the indexed element when in bounds. Used by
     `theta_d` to read `s.c`. -/
 @[spec]
@@ -416,7 +406,18 @@ private theorem lane_index_spec
     ⦃ ⌜ True ⌝ ⦄
     lane.Lane2U32.Insts.CoreOpsIndexIndexUsizeU32.index l i
     ⦃ Q ⦄ := by
-  -- TODO(new-aeneas): hypothesis uses `[ ]` not `[ ]!`.
+  unfold lane.Lane2U32.Insts.CoreOpsIndexIndexUsizeU32.index
+  mvcgen
+  all_goals first | scalar_tac | (try intros; apply hpost; simp_all)
+
+@[spec]
+private theorem get_with_zeta_spec
+    (s : state.KeccakState) (i j zeta : Std.Usize) {Q}
+    (hi : i.val < 5) (hj : j.val < 5) (hzeta : zeta.val < 2)
+    (hpost : ∀ v : Std.U32, v = (s.st.val[5 * j.val + i.val]!).val[zeta.val]! →
+        (Q.1 v).down) :
+    ⦃ ⌜ True ⌝ ⦄ state.KeccakState.get_with_zeta s i j zeta ⦃ Q ⦄ := by
+  -- TODO(new-aeneas): need to bridge `getElem` to `getElem!` in residual goal.
   sorry
 
 /-- `CoreModels.core.num.U32.rotate_left` returns the bit-rotated value. (Local

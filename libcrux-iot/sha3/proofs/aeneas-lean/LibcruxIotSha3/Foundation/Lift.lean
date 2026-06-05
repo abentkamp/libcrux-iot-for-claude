@@ -412,7 +412,7 @@ theorem result_eq_of_triple {α : Type} {x : Std.Result α} {v : α}
     (h : ⦃ ⌜ True ⌝ ⦄ x ⦃ ⇓ r => ⌜ r = v ⌝ ⦄) : x = .ok v := by
   match hx : x, h with
   | .ok v', h =>
-      have hv' : v' = v := by simpa [Triple, WP.wp] using h
+      have hv' : v' = v := by simpa [Triple, WP.wp, PredTrans.apply] using h
       rw [hv']
   | .fail e, h => exact absurd h (by simp [Triple, WP.wp, PredTrans.apply])
   | .div, h => exact absurd h (by simp [Triple, WP.wp, PredTrans.apply])
