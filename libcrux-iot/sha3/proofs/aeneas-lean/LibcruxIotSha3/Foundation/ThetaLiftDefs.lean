@@ -181,8 +181,19 @@ theorem theta_closure_1_call_mut_spec
     keccak_f.theta.closure_1.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
       c k
     ⦃ ⇓ r => ⌜ r = (theta_closure_1_d_at c k.val, c) ⌝ ⦄ := by
-  -- TODO(new-aeneas): Std.UScalar.rotate_left is no longer unfoldable.
-  sorry
+  have h4 : (k.val + 4) % 5 < c.val.length := by simp; omega
+  have h1 : (k.val + 1) % 5 < c.val.length := by simp; omega
+  have h4_eq : c.val[(k.val + 4) % 5]! = c.val[(k.val + 4) % 5]'h4 := by
+    rw [List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem h4]; rfl
+  have h1_eq : c.val[(k.val + 1) % 5]! = c.val[(k.val + 1) % 5]'h1 := by
+    rw [List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem h1]; rfl
+  unfold keccak_f.theta.closure_1.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
+        theta_closure_1_d_at
+  hax_mvcgen
+  all_goals (first | scalar_tac | (simp; scalar_tac)
+                   | (congr 1; rw [h4_eq, h1_eq];
+                      apply Std.U64.bv_eq_imp_eq;
+                      simp_all [Std.UScalar.bv_xor, Std.UScalar.rotate_left]))
 
 /-- `f`-side of theta's third closure (25 final state values).
     Under the new layout `k = 5*y + x`, so `x = k % 5` and `D[x] = d[k%5]`. -/
@@ -200,8 +211,19 @@ theorem theta_closure_2_call_mut_spec
     keccak_f.theta.closure_2.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
       sd k
     ⦃ ⇓ r => ⌜ r = (theta_closure_2_at sd k.val, sd) ⌝ ⦄ := by
-  -- TODO(new-aeneas): Std.U64.bv_eq_imp_eq no longer unifies.
-  sorry
+  have h25 : k.val < sd.1.val.length := by simp; omega
+  have h5 : k.val % 5 < sd.2.val.length := by simp; omega
+  have h25_eq : sd.1.val[k.val]! = sd.1.val[k.val]'h25 := by
+    rw [List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem h25]; rfl
+  have h5_eq : sd.2.val[k.val % 5]! = sd.2.val[k.val % 5]'h5 := by
+    rw [List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem h5]; rfl
+  unfold keccak_f.theta.closure_2.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
+        theta_closure_2_at
+  hax_mvcgen
+  all_goals (first | scalar_tac | (simp; scalar_tac)
+                   | (congr 1; rw [h25_eq, h5_eq];
+                      apply Std.U64.bv_eq_imp_eq;
+                      simp_all [Std.UScalar.bv_xor]))
 
 /-- `f`-side of `rho`'s closure (25 lane-rotations). -/
 def rho_closure_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
@@ -216,8 +238,19 @@ theorem rho_closure_call_mut_spec
     keccak_f.rho.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
       state k
     ⦃ ⇓ r => ⌜ r = (rho_closure_at state k.val, state) ⌝ ⦄ := by
-  -- TODO(new-aeneas): Std.UScalar.rotate_left is no longer unfoldable.
-  sorry
+  have hs : k.val < state.val.length := by simp; omega
+  have hr : k.val < keccak_f.RHO_OFFSETS.val.length := by simp; omega
+  have hs_eq : state.val[k.val]! = state.val[k.val]'hs := by
+    rw [List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem hs]; rfl
+  have hr_eq : keccak_f.RHO_OFFSETS.val[k.val]!
+             = keccak_f.RHO_OFFSETS.val[k.val]'hr := by
+    rw [List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem hr]; rfl
+  unfold keccak_f.rho.closure.Insts.CoreOpsFunctionFnMutTupleUsizeU64.call_mut
+        rho_closure_at
+  hax_mvcgen
+  all_goals (first | scalar_tac | (simp; scalar_tac)
+                   | (congr 1; rw [hs_eq, hr_eq];
+                      simp_all [Std.UScalar.rotate_left]))
 
 /-- `f`-side of `pi`'s closure (lane permutation). Under the new layout
     `A[x,y]` is at position `5*y + x`, so π's output at `k = 5*y + x`
