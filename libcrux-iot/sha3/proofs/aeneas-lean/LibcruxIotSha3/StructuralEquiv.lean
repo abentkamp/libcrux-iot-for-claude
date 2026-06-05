@@ -29,6 +29,8 @@ open libcrux_iot_sha3.BitSpec
 
 set_option mvcgen.warning false
 
+attribute [local spec] Aeneas.Std.uncurry
+
 /-- Bridge: when `r.i.val = s.i.val + 1` and `s.i.val < 24`, recover the
     UScalar-level equality `r.i = ⟨s.i.bv + 1⟩`. Used in every PrcLift FC
     sub-fn that increments `s.i` (the `_zeta1` family with RC). -/
@@ -859,8 +861,15 @@ private theorem round1_theta_d_spec_fc (s : state.KeccakState) :
           s.c.val[3]!.val[0]! ^^^ Foundation.rot32 s.c.val[0]!.val[1]! 1 ∧
         r.d.val[4]!.val[1]! =
           s.c.val[3]!.val[1]! ^^^ s.c.val[0]!.val[0]! ⌝ ⦄ := by
-  -- TODO(new-aeneas): see theta_d TODO in ThetaLiftDefs.
-  sorry
+  unfold keccak.keccakf1600_round1_theta_d
+  mvcgen
+  all_goals first
+    | scalar_tac
+    | (refine ⟨trivial, trivial, trivial, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+       (apply Std.U32.bv_eq_imp_eq
+        simp_all [WP.uncurry', Std.Array.set_val_eq,
+                  Std.UScalar.bv_xor, Foundation.rot32, Std.UScalar.rotate_left]) <;>
+       scalar_tac)
 
 set_option maxHeartbeats 8000000 in
 @[spec high]
@@ -1643,8 +1652,15 @@ private theorem round2_theta_d_spec_fc (s : state.KeccakState) :
           s.c.val[3]!.val[0]! ^^^ Foundation.rot32 s.c.val[0]!.val[1]! 1 ∧
         r.d.val[4]!.val[1]! =
           s.c.val[3]!.val[1]! ^^^ s.c.val[0]!.val[0]! ⌝ ⦄ := by
-  -- TODO(new-aeneas): see theta_d TODO in ThetaLiftDefs.
-  sorry
+  unfold keccak.keccakf1600_round2_theta_d
+  mvcgen
+  all_goals first
+    | scalar_tac
+    | (refine ⟨trivial, trivial, trivial, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+       (apply Std.U32.bv_eq_imp_eq
+        simp_all [WP.uncurry', Std.Array.set_val_eq,
+                  Std.UScalar.bv_xor, Foundation.rot32, Std.UScalar.rotate_left]) <;>
+       scalar_tac)
 
 set_option maxHeartbeats 8000000 in
 @[spec high]
@@ -2355,8 +2371,15 @@ private theorem round3_theta_d_spec_fc (s : state.KeccakState) :
           s.c.val[3]!.val[0]! ^^^ Foundation.rot32 s.c.val[0]!.val[1]! 1 ∧
         r.d.val[4]!.val[1]! =
           s.c.val[3]!.val[1]! ^^^ s.c.val[0]!.val[0]! ⌝ ⦄ := by
-  -- TODO(new-aeneas): see theta_d TODO in ThetaLiftDefs.
-  sorry
+  unfold keccak.keccakf1600_round3_theta_d
+  mvcgen
+  all_goals first
+    | scalar_tac
+    | (refine ⟨trivial, trivial, trivial, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
+       (apply Std.U32.bv_eq_imp_eq
+        simp_all [WP.uncurry', Std.Array.set_val_eq,
+                  Std.UScalar.bv_xor, Foundation.rot32, Std.UScalar.rotate_left]) <;>
+       scalar_tac)
 
 set_option maxHeartbeats 8000000 in
 @[spec high]
