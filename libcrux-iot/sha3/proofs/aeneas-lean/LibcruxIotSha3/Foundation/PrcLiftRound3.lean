@@ -47,8 +47,38 @@ private theorem pi_rho_chi_y0_zeta0_spec_fc_3
         (bx2 ^^^ ((~~~bx3) &&& bx4))
         (bx3 ^^^ ((~~~bx4) &&& bx0))
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
-  -- TODO(new-aeneas): macro-style proof; hyp names no longer match.
-  sorry
+  unfold keccak.keccakf1600_round3_pi_rho_chi_y0_zeta0
+  hax_mvcgen
+  all_goals try scalar_tac
+  expose_names
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact h_60.trans (h_53.trans (h_46.trans (h_39.trans h_32)))
+  · exact h_59.trans (h_52.trans (h_45.trans (h_38.trans h_31)))
+  · exact h_58.trans (h_51.trans (h_44.trans (h_37.trans h_30)))
+  · have hb : s.i.val < keccak.RC_INTERLEAVED_0.val.length := by
+      have hl : keccak.RC_INTERLEAVED_0.val.length = 255 := by native_decide
+      omega
+    have hRC : keccak.RC_INTERLEAVED_0.val[s.i.val]?.getD default
+             = keccak.RC_INTERLEAVED_0.val[s.i.val]'hb := by
+      rw [List.getElem?_eq_getElem hb]; rfl
+    rw [h_61, h_54, h_47, h_40, h_33]
+    norm_num [apply_5_writes]
+    congr 6
+    all_goals apply Std.U32.bv_eq_imp_eq
+    all_goals (
+      simp only [
+        hRC,
+        h_29.2, h_27.2, h_26.2, h_25,
+        h_36.2, h_35.2, h_34,
+        h_43.2, h_42.2, h_41,
+        h_50.2, h_49.2, h_48,
+        h_57.2, h_56.2, h_55,
+        h_7, h_9, h_20, h_22, h_24,
+        h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+        h_28,
+        h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+        Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, rot32]
+      norm_num)
 
 /-! y0_zeta1 FC (round 3): writes lanes 0/5/10/15/20 at half 1;
     RC_INTERLEAVED_1[s.i] XORed into lane 0 half 1; INCREMENTS `s.i`. -/
@@ -72,8 +102,39 @@ private theorem pi_rho_chi_y0_zeta1_spec_fc_3
         (bx2 ^^^ ((~~~bx3) &&& bx4))
         (bx3 ^^^ ((~~~bx4) &&& bx0))
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
-  -- TODO(new-aeneas): macro-style proof; hyp names no longer match.
-  sorry
+  unfold keccak.keccakf1600_round3_pi_rho_chi_y0_zeta1
+  hax_mvcgen
+  all_goals try scalar_tac
+  expose_names
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · exact h_61.trans (h_54.trans (h_47.trans (h_40.trans h_33)))
+  · exact h_60.trans (h_53.trans (h_46.trans (h_39.trans h_32)))
+  · rw [h_59, h_52, h_45, h_38, h_31, h_30]
+    rfl
+  · have hb : s.i.val < keccak.RC_INTERLEAVED_1.val.length := by
+      have hl : keccak.RC_INTERLEAVED_1.val.length = 255 := by native_decide
+      omega
+    have hRC : keccak.RC_INTERLEAVED_1.val[s.i.val]?.getD default
+             = keccak.RC_INTERLEAVED_1.val[s.i.val]'hb := by
+      rw [List.getElem?_eq_getElem hb]; rfl
+    rw [h_62, h_55, h_48, h_41, h_34]
+    norm_num [apply_5_writes]
+    congr 6
+    all_goals apply Std.U32.bv_eq_imp_eq
+    all_goals (
+      simp only [
+        hRC,
+        h_29.2, h_27.2, h_26.2, h_25,
+        h_37.2, h_36.2, h_35,
+        h_44.2, h_43.2, h_42,
+        h_51.2, h_50.2, h_49,
+        h_58.2, h_57.2, h_56,
+        h_7, h_9, h_20, h_22, h_24,
+        h_6.2, h_8.2, h_19.2, h_21.2, h_23.2,
+        h_28,
+        h, h_1, h_2, h_3, h_4, h_5, h_10, h_11, h_12, h_13, h_14, h_15, h_16, h_17, h_18,
+        Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, rot32]
+      norm_num)
 
 /-! y1_zeta0 FC (round 3): writes lanes 1/6/11/16/21 at half 0; preserves `s.i`. -/
 set_option maxHeartbeats 16000000 in
