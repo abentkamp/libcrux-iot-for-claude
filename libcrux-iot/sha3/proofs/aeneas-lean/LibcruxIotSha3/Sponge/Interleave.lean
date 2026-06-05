@@ -191,11 +191,9 @@ private theorem append_zero_32_eq_shiftLeft_setWidth (x : BitVec 32) :
 
 
 /-! Remaining content sorried: `interleave_spec` / `deinterleave_spec`
-    leave the bv_decide goal in a form with both `0#32 ++ x` and
-    `x ++ 0#32` (BV64) — bv_decide treats those as opaque even when
-    the bridge lemmas `zero_append_eq_setWidth_32` and
-    `append_zero_32_eq_shiftLeft_setWidth` are in the simp set, because
-    a sub-step re-introduces the append form. Tactic-fu unfinished. -/
+    bv_decide reports spurious counterexample despite the bridge lemmas
+    being available — the bv_decide normalizer appears to introduce
+    `0#32 ++ x` opaque sub-expressions. Tactic-fu unfinished. -/
 #exit
 
 end libcrux_iot_sha3.Sponge
