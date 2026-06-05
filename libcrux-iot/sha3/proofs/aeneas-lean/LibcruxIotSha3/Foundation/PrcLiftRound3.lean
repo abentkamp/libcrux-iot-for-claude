@@ -612,6 +612,16 @@ theorem lift_theta_applied_perm_bv_24_3 (s : state.KeccakState) :
   simp only [hp, hsw, lift_lane_maybe_swap, lift_lane, Std.UScalar.bv_xor]
   rw [lift_xor]; rfl
 
+/-! ### Set-peeling lemmas (`getElem!` over `List.set`), local copies. -/
+private theorem list_getElem!_set_ne {α} [Inhabited α] {l : List α} {i j : Nat}
+    {a : α} (h : i ≠ j) : (l.set i a)[j]! = l[j]! := by
+  simp only [List.getElem!_eq_getElem?_getD, List.getElem?_set, if_neg h]
+
+private theorem list_getElem!_set_eq {α} [Inhabited α] {l : List α} {i : Nat}
+    {a : α} (h : i < l.length) : (l.set i a)[i]! = a := by
+  simp only [List.getElem!_eq_getElem?_getD, List.getElem?_set, if_pos rfl, h,
+    if_true, Option.getD_some]
+
 /-! ## Main composition: `prc_lift_spec_3`
 
 Mirrors `prc_lift_spec_1` (round 1) but with `(impl_perm ∘ impl_perm ∘ impl_perm)`
@@ -642,7 +652,7 @@ private theorem lift_eq_lift_perm_pow4 (r : state.KeccakState) :
   unfold lift_lane_maybe_swap
   simp
 
-set_option maxHeartbeats 1000000 in
+set_option maxHeartbeats 32000000 in
 theorem prc_lift_spec_3 (s : state.KeccakState) (hi_lt : s.i.val < 24) :
     ⦃ ⌜ True ⌝ ⦄
     (do let r1 ← keccak.keccakf1600_round3_pi_rho_chi_1 0#usize s
@@ -655,7 +665,54 @@ theorem prc_lift_spec_3 (s : state.KeccakState) (hi_lt : s.i.val < 24) :
           let a3 ← keccak_f.chi a2
           let r_spec ← keccak_f.iota a3 s.i
           pure (r_spec = Foundation.lift r_impl)).holds ⌝ ⦄ := by
-  -- TODO(new-aeneas): List.getElem!_set/List.getElem!_set_ne removed.
-  sorry
+  unfold keccak.keccakf1600_round3_pi_rho_chi_1
+  unfold keccak.keccakf1600_round3_pi_rho_chi_2
+  hax_mvcgen
+  all_goals try scalar_tac
+  subst_vars
+  rw [prc_spec_eq_composed]
+  casesm* _ ∧ _
+  have hlane : ∀ (L : lane.Lane2U32), L.val.length = 2 := fun L => L.2
+  have hss : (↑s.st : List lane.Lane2U32).length = 25 := s.st.2
+  rw [lift_eq_lift_perm_pow4]
+  apply Subtype.ext
+  unfold prc_spec lift_perm transpose_perm
+  conv_rhs =>
+    rw [show (impl_swap_k 4) = (fun _ : Fin 25 => false) from by
+      funext L; unfold impl_swap_k; rfl]
+    unfold impl_perm lift_lane_maybe_swap
+  simp (config := { decide := true }) only [Std.Array.make, List.ofFn_succ, List.ofFn_zero,
+    Function.comp_apply, Fin.val_succ, Fin.val_zero, Nat.succ_eq_add_one, Nat.zero_add,
+    Nat.reduceAdd, Nat.reduceMul, Nat.reduceDiv, Nat.reduceMod, reduceIte]
+  repeat' (first | rfl | (apply List.cons_eq_cons.mpr; refine ⟨?_, ?_⟩))
+  all_goals (
+    apply Std.U64.bv_eq_imp_eq
+    simp (config := { decide := true }) only
+      [*, apply_5_writes, lift_lane,
+       list_getElem!_set_ne, list_getElem!_set_eq, List.length_set,
+       Std.Array.set_val_eq, hlane, hss,
+       show ((0#usize : Std.Usize) : Nat) = 0 from rfl,
+       show ((1#usize : Std.Usize) : Nat) = 1 from rfl]
+    simp only [lift_theta_applied_perm_bv_0_3, lift_theta_applied_perm_bv_1_3,
+      lift_theta_applied_perm_bv_2_3, lift_theta_applied_perm_bv_3_3,
+      lift_theta_applied_perm_bv_4_3, lift_theta_applied_perm_bv_5_3,
+      lift_theta_applied_perm_bv_6_3, lift_theta_applied_perm_bv_7_3,
+      lift_theta_applied_perm_bv_8_3, lift_theta_applied_perm_bv_9_3,
+      lift_theta_applied_perm_bv_10_3, lift_theta_applied_perm_bv_11_3,
+      lift_theta_applied_perm_bv_12_3, lift_theta_applied_perm_bv_13_3,
+      lift_theta_applied_perm_bv_14_3, lift_theta_applied_perm_bv_15_3,
+      lift_theta_applied_perm_bv_16_3, lift_theta_applied_perm_bv_17_3,
+      lift_theta_applied_perm_bv_18_3, lift_theta_applied_perm_bv_19_3,
+      lift_theta_applied_perm_bv_20_3, lift_theta_applied_perm_bv_21_3,
+      lift_theta_applied_perm_bv_22_3, lift_theta_applied_perm_bv_23_3,
+      lift_theta_applied_perm_bv_24_3,
+      Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, rot32, rot64]
+    simp only [Std.UScalarTy.U64_numBits_eq,
+      rot_0, rot_1, rot_2, rot_3, rot_6, rot_8, rot_10,
+      rot_14, rot_15, rot_18, rot_20, rot_21, rot_25, rot_27,
+      rot_28, rot_36, rot_39, rot_41, rot_43, rot_44, rot_45,
+      rot_55, rot_56, rot_61, rot_62,
+      ← lift_xor, ← lift_and, ← lift_not, ← lift_chi,
+      ← rc_equiv _ hi_lt])
 
 end libcrux_iot_sha3.Foundation
