@@ -35,7 +35,6 @@ import LibcruxIotSha3.Sponge.Opaque
 open Aeneas Aeneas.Std Result Std.Do libcrux_iot_sha3 hacspec_sha3
 
 namespace libcrux_iot_sha3.Sponge
-end libcrux_iot_sha3.Sponge
 
 set_option allowUnsafeReducibility true in
 attribute [local irreducible] keccak.keccakf1600 keccak_f.keccak_f
@@ -222,10 +221,7 @@ theorem core_models_slice_Slice_copy_from_slice_spec
     simp [h]
   simp [Triple, WP.wp, PredTrans.apply, h']
 
-/-! Remaining content sorried due to new-aeneas/core-models API drift. -/
-#exit
-
-/-! ### `core_models.Array.Insts.Core_modelsConvertTryFromShared0SliceTryFromSliceError.try_from`
+/-! ### `CoreModels.core.Array.Insts.CoreConvertTryFromShared0SliceTryFromSliceError.try_from`
 
 The body invokes `CoreModels.rust_primitives.slice.array_from_fn` on the `try_from`
 closure (whose state is just the source `Slice T`). The proof has three
@@ -263,12 +259,12 @@ private theorem bv_ofNat_usize_val_eq (n : Nat) (hn : n ≤ Std.Usize.max) :
 private theorem try_from_closure_call_mut_eq
     {T : Type} [Inhabited T] {N : Std.Usize} (cpy : CoreModels.core.marker.Copy T)
     (s : Slice T) (i : Std.Usize) (h : i.val < s.val.length) :
-    core_models.convert.TryFromArrayShared0SliceTryFromSliceError.try_from.closure.Insts.CoreOpsFunctionFnMutTupleUsizeT.call_mut
+    CoreModels.core.convert.TryFromArrayShared0SliceTryFromSliceError.try_from.closure.Insts.CoreOpsFunctionFnMutTupleUsizeT.call_mut
       (T := T) (N := N) cpy s i =
       .ok (s.val[i.val]!, s) := by
   -- Reduces to `do let t ← slice_index s i; ok (t, s)`.
-  unfold core_models.convert.TryFromArrayShared0SliceTryFromSliceError.try_from.closure.Insts.CoreOpsFunctionFnMutTupleUsizeT.call_mut
-  unfold rust_primitives.slice.slice_index Std.Slice.index_usize
+  unfold CoreModels.core.convert.TryFromArrayShared0SliceTryFromSliceError.try_from.closure.Insts.CoreOpsFunctionFnMutTupleUsizeT.call_mut
+  unfold CoreModels.rust_primitives.slice.slice_index Std.Slice.index_usize
   -- Now `s[i]?` matches; for `i.val < s.length`, `s[i]? = some s.val[i.val]!`.
   have hsome : s[i]? = some s.val[i.val]! := by
     simp only [Std.Slice.getElem?_Usize_eq]
@@ -294,7 +290,7 @@ private theorem foldlM_try_from_closure_invariant
       (List.range' start k).foldlM
         (fun (p : List T × Slice T) (i : Nat) => do
           let (v, f') ←
-            core_models.convert.TryFromArrayShared0SliceTryFromSliceError.try_from.closure.Insts.CoreOpsFunctionFnMutTupleUsizeT.call_mut
+            CoreModels.core.convert.TryFromArrayShared0SliceTryFromSliceError.try_from.closure.Insts.CoreOpsFunctionFnMutTupleUsizeT.call_mut
               (T := T) (N := N) cpy p.2 ⟨BitVec.ofNat _ i⟩
           ok (p.1 ++ [v], f'))
         (acc, s)
@@ -342,7 +338,7 @@ private theorem array_from_fn_try_from_eq_ok
     {T : Type} [Inhabited T] {N : Std.Usize} (cpy : CoreModels.core.marker.Copy T)
     (s : Slice T) (hlen : s.val.length = N.val) :
     CoreModels.rust_primitives.slice.array_from_fn N
-      (core_models.convert.TryFromArrayShared0SliceTryFromSliceError.try_from.closure.Insts.CoreOpsFunctionFnMutTupleUsizeT
+      (CoreModels.core.convert.TryFromArrayShared0SliceTryFromSliceError.try_from.closure.Insts.CoreOpsFunctionFnMutTupleUsizeT
         (T := T) (N := N) cpy) s
     = .ok (Std.Array.make N s.val (by simp [hlen])) := by
   -- Foldl invariant at start=0, k=N.val, acc=[].
@@ -384,12 +380,12 @@ theorem core_models_array_try_from_slice_spec
     {T : Type} [Inhabited T] {N : Std.Usize} (cpy : CoreModels.core.marker.Copy T)
     (s : Slice T) (hlen : s.val.length = N.val) :
     ⦃ ⌜ True ⌝ ⦄
-    core_models.Array.Insts.Core_modelsConvertTryFromShared0SliceTryFromSliceError.try_from
+    CoreModels.core.Array.Insts.CoreConvertTryFromShared0SliceTryFromSliceError.try_from
       N cpy s
     ⦃ ⇓ r => ⌜ r = CoreModels.core.result.Result.Ok
                     (Std.Array.make N s.val (by simp [hlen])) ⌝ ⦄ := by
   -- Unfold try_from and reduce the `do` chain step-by-step.
-  unfold core_models.Array.Insts.Core_modelsConvertTryFromShared0SliceTryFromSliceError.try_from
+  unfold CoreModels.core.Array.Insts.CoreConvertTryFromShared0SliceTryFromSliceError.try_from
   -- `CoreModels.core.slice.Slice.len x` is `pure (Slice.len x)`, returns `.ok (Slice.len s)`.
   unfold CoreModels.core.slice.Slice.len
   -- The if-decision: `Slice.len s = N` reduces to `s.val.length = N.val`.
@@ -412,7 +408,7 @@ theorem core_models_try_from_unwrap_spec
     (s : Slice T) (hlen : s.val.length = N.val) :
     ⦃ ⌜ True ⌝ ⦄
     (do
-      let r ← core_models.Array.Insts.Core_modelsConvertTryFromShared0SliceTryFromSliceError.try_from
+      let r ← CoreModels.core.Array.Insts.CoreConvertTryFromShared0SliceTryFromSliceError.try_from
                 N cpy s
       CoreModels.core.result.Result.unwrap dbg r)
     ⦃ ⇓ a => ⌜ a = Std.Array.make N s.val (by simp [hlen]) ⌝ ⦄ := by
@@ -422,7 +418,7 @@ theorem core_models_try_from_unwrap_spec
   unfold CoreModels.core.result.Result.unwrap
   -- Reduce `try_from` to its known .ok form. The Triple post `h_try` already
   -- encodes this.
-  have h_eq : (core_models.Array.Insts.Core_modelsConvertTryFromShared0SliceTryFromSliceError.try_from
+  have h_eq : (CoreModels.core.Array.Insts.CoreConvertTryFromShared0SliceTryFromSliceError.try_from
                   N cpy s)
               = .ok (.Ok (Std.Array.make N s.val (by simp [hlen]))) := by
     exact libcrux_iot_sha3.Foundation.result_eq_of_triple h_try
