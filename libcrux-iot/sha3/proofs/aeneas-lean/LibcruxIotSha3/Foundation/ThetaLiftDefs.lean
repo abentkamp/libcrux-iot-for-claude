@@ -24,6 +24,8 @@ namespace libcrux_iot_sha3.Foundation
 
 set_option mvcgen.warning false
 
+attribute [local spec] Aeneas.Std.uncurry
+
 /-! ## Bridge 1: `keccak_f.{theta, rho, pi, chi}` equal their `_unrolled` variants
 
 The hacspec definitions of `theta`/`rho`/`pi`/`chi` call `createi N inst c` —
@@ -393,8 +395,16 @@ private theorem set_lane_value_spec
     ⦃ ⌜ True ⌝ ⦄
     state.KeccakState.set_lane_value s i j v
     ⦃ Q ⦄ := by
-  -- TODO(new-aeneas): Std.WP.predn no longer exists.
-  sorry
+  have h_idx : i.val < s.c.val.length := by simp; scalar_tac
+  have h_eq : s.c.val[i.val]! = s.c.val[i.val]'h_idx := by
+    rw [List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem h_idx]; rfl
+  unfold state.KeccakState.set_lane_value
+  mvcgen
+  all_goals first | simpa | scalar_tac | (
+    apply hpost <;> first
+      | rfl
+      | scalar_tac
+      | (rw [h_eq]; simp_all [WP.uncurry', Std.Array.set_val_eq]))
 
 /-- `Lane2U32` array-index returns the indexed element when in bounds. Used by
     `theta_d` to read `s.c`. -/
@@ -417,8 +427,16 @@ private theorem get_with_zeta_spec
     (hpost : ∀ v : Std.U32, v = (s.st.val[5 * j.val + i.val]!).val[zeta.val]! →
         (Q.1 v).down) :
     ⦃ ⌜ True ⌝ ⦄ state.KeccakState.get_with_zeta s i j zeta ⦃ Q ⦄ := by
-  -- TODO(new-aeneas): need to bridge `getElem` to `getElem!` in residual goal.
-  sorry
+  have h_idx : 5 * j.val + i.val < s.st.val.length := by simp; scalar_tac
+  have h_eq : s.st.val[5 * j.val + i.val]! = s.st.val[5 * j.val + i.val]'h_idx := by
+    rw [List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem h_idx]; rfl
+  unfold state.KeccakState.get_with_zeta
+  mvcgen
+  all_goals first | scalar_tac | (
+    try intros
+    apply hpost
+    rw [h_eq]
+    simp_all)
 
 /-- `CoreModels.core.num.U32.rotate_left` returns the bit-rotated value. (Local
     re-statement of the spec in `CoreModels/Specs.lean` for downstream

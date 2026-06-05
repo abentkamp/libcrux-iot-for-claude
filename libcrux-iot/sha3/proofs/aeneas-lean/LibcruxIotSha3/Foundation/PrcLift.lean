@@ -23,6 +23,8 @@ namespace libcrux_iot_sha3.Foundation
 
 set_option mvcgen.warning false
 
+attribute [local spec] Aeneas.Std.uncurry
+
 /-! ### Macro: `preserves_complement`
 
 Given a list of 5 written lane indices, expand to the 40-conjunct
@@ -77,8 +79,16 @@ private theorem set_with_zeta_spec
     ⦃ ⌜ True ⌝ ⦄
     state.KeccakState.set_with_zeta s i j zeta v
     ⦃ Q ⦄ := by
-  -- TODO(new-aeneas): Std.WP.predn no longer exists.
-  sorry
+  have h_idx : 5 * j.val + i.val < s.st.val.length := by simp; scalar_tac
+  have h_eq : s.st.val[5 * j.val + i.val]! = s.st.val[5 * j.val + i.val]'h_idx := by
+    rw [List.getElem!_eq_getElem?_getD, List.getElem?_eq_getElem h_idx]; rfl
+  unfold state.KeccakState.set_with_zeta
+  mvcgen
+  all_goals first | simpa | scalar_tac | (
+    apply hpost <;> first
+      | rfl
+      | scalar_tac
+      | (rw [h_eq]; simp_all [WP.uncurry', Std.Array.set_val_eq]))
 
 /-! ## Full-FC sub-function specs (Step 7)
 
