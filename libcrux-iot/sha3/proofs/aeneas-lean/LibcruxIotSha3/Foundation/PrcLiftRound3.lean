@@ -631,7 +631,7 @@ Output collapse: `impl_perm^[4] = id` and `impl_swap_k 4 = swZero`, so
 `lift_perm r_impl (impl_perm^[4]) (impl_swap_k 4) = Foundation.lift r_impl`. -/
 
 /-- Bridge: canonical `lift` equals `lift_perm` at `(impl_perm^[4], impl_swap_k 4)`.
-    Under the new layout both sides apply `transpose_perm` internally. -/
+    Both sides apply `transpose_perm` internally. -/
 private theorem lift_eq_lift_perm_pow4 (r : state.KeccakState) :
     Foundation.lift r =
       lift_perm r (impl_perm ∘ impl_perm ∘ impl_perm ∘ impl_perm) (impl_swap_k 4) := by

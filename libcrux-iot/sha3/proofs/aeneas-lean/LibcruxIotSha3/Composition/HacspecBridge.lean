@@ -8,13 +8,12 @@
   over an `I32` range `[0, 6)`. The hacspec's `keccak_f.keccak_f` iterates
   the body `theta ; rho ; pi ; chi ; iota round` 24 times over a `Usize`
   range `[0, 24)`. Our `Composition.keccakf1600_equiv_via_bit` proves that
-  the impl's output equals a 24-fold spec chain (`spec_chain (lift s) 24`)
-  using the `_unrolled` variants of the spec functions.
+  the impl's output equals a 24-fold spec chain (`spec_chain (lift s) 24`).
 
   This file provides the loop-spec infrastructure for the `Usize` range,
   the structural-unfolding helper for `array.from_fn` / `createi` over
   small `N`, and the spec-side definitions in terms of the hacspec
-  (non-unrolled) variants that mirror `keccak_f.keccak_f`'s body.
+  round body (θ; ρ; π; χ; ι) that mirrors `keccak_f.keccak_f`'s body.
 
   These bridge the iteration-structure gap between our proof
   infrastructure (using `Nat.fold 24` over `spec_round_step`) and the
@@ -107,7 +106,7 @@ theorem array_from_fn_eq_unfold5
     subst hres
     rfl
 
-/-! ## Spec-side single-round step using hacspec (non-`_unrolled`) variants
+/-! ## Spec-side single-round step (hacspec round body)
 
 Mirrors `keccak_f.keccak_f_loop.body` (the `Some round` branch). -/
 
@@ -282,7 +281,7 @@ theorem loop_range_spec_usize {β : Type}
       exact ih acc' iter'.start
         (by rw [hstart]; omega) (by rw [hstart]; omega) (by rw [hstart]; omega) hinv'
 
-/-! ## Spec-chain via hacspec (non-`_unrolled`) variants
+/-! ## Spec-chain via the hacspec round body
 
 Mirrors `spec_chain` (from `SpecChain.lean`) but uses `spec_round_step_hacspec`. -/
 
@@ -316,12 +315,8 @@ This file provides the infrastructure that bridges the impl-level
   dependent-typed `match h : foldlM ... with | ok r => ⟨r.1, _proof_1⟩`
   via a `split` + `subst` approach).
 - `spec_round_step_hacspec` / `spec_chain_hacspec` — spec-side
-  definitions mirroring the hacspec loop body using the non-`_unrolled`
-  variants of θ/ρ/π/χ. Includes `_zero` and `_succ` recurrence lemmas.
-- `theta_eq_theta_unrolled` / `rho_eq_rho_unrolled` /
-  `pi_eq_pi_unrolled` / `chi_eq_chi_unrolled` — function-equality
-  bridges from the `createi`-based hacspec forms to their straight-line
-  `_unrolled` variants.
+  definitions mirroring the hacspec loop body (θ/ρ/π/χ/ι). Includes
+  `_zero` and `_succ` recurrence lemmas.
 - `keccak_f_loop_eq_spec_chain_hacspec` — `loop_range_spec_usize` with
   the invariant "after k iterations, the state equals
   `spec_chain_hacspec s k`".
@@ -642,9 +637,9 @@ theorem keccak_f_loop_eq_spec_chain_hacspec
 
 /-! ## Bridge 1 closure: spec_round_step / spec_chain equality
 
-Under the new layout (no `_unrolled` variants), `spec_round_step_hacspec`
-and `spec_round_step` are identical (both go through `keccak_f.theta /
-rho / pi / chi`), so the equality is definitional. -/
+`spec_round_step_hacspec` and `spec_round_step` are identical (both go
+through `keccak_f.theta / rho / pi / chi`), so the equality is
+definitional. -/
 
 theorem spec_round_step_hacspec_eq_spec_round_step
     (state : Std.Array Std.U64 25#usize) (round : Std.Usize) :
@@ -659,8 +654,8 @@ theorem spec_chain_hacspec_eq_spec_chain
   | zero => rw [spec_chain_hacspec_zero, spec_chain_zero]
   | succ k ih =>
     rw [spec_chain_hacspec_succ, spec_chain_succ, ih]
-    -- Under the new layout `spec_round_step_hacspec_at` and
-    -- `spec_round_step_at` are definitionally equal — `congr 1` closes.
+    -- `spec_round_step_hacspec_at` and `spec_round_step_at` are
+    -- definitionally equal — `congr 1` closes.
     congr 1
 
 /-! ## Top-level theorem: impl ↔ hacspec

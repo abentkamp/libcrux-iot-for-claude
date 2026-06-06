@@ -432,8 +432,8 @@ The current Aeneas `Array.index_usize_spec` post is the total `getElem`
 sponge accessors (`get_lane`/`set_lane`/the `Lane2U32` `Index` instance) all
 unfold to `Array.index_usize`, so a single high-priority `@[spec]` override
 of the index post (which `mvcgen` prefers over the auto-generated default)
-makes every unfolded read come out as `!` — reproducing the form the
-pre-migration proofs expect, with no per-site bridging. `@[spec high]`
+makes every unfolded read come out as `!` — the `getElem!` form the sponge
+proofs use, with no per-site bridging. `@[spec high]`
 ensures it wins over the Aeneas default without disabling it (disabling
 would just make `mvcgen` unfold `index_usize` to the total form instead). -/
 @[spec high]

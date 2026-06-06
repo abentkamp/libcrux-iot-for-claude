@@ -90,7 +90,7 @@ private theorem set_with_zeta_spec
       | scalar_tac
       | (rw [h_eq]; simp_all [WP.uncurry', Std.Array.set_val_eq]))
 
-/-! ## Full-FC sub-function specs (Step 7)
+/-! ## Full-FC sub-function specs
 
 Each of the 10 `pi_rho_chi_y{0..4}_zeta{0,1}` sub-functions writes 5
 cells of `st`; we capture them in **50-cell FC form**: 5 written cells
@@ -101,24 +101,7 @@ The FC posts are `@[spec]`-tagged so `hax_mvcgen` threads the cell
 content automatically when composing `pi_rho_chi_{1,2}` (via the
 `prc_chain_FC` spec) and downstream into `prc_lift_spec`. -/
 
-/-- Legacy macro for the original 50-cell FC posts (kept while migrating
-    the remaining FCs to the R1 chained-set form). -/
-local macro "prc_y_zeta_fc_proof" subfun:ident : tactic => `(tactic|
-  (unfold $subfun
-   hax_mvcgen
-   all_goals first
-     | scalar_tac
-     | (refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
-        all_goals first
-          | (apply Eq.trans ‹_›; assumption)
-          | assumption
-          | scalar_tac
-          | simp_all [Std.Array.set_val_eq, rot32,
-                      Std.UScalar.eq_equiv_bv_eq,
-                      Std.UScalar.bv_xor, Std.UScalar.bv_and,
-                      Std.UScalar.bv_not])))
-
-/- Proof body for the R1 chained-set FC posts in the y1-y4 family
+/- Proof body for the chained-set FC posts in the y1-y4 family
    (no RC step, preserves `s.i`). Uses `expose_names` to grab the stable
    hyp names produced by `hax_mvcgen` (which assigns h_25..h_55 to the
    chi value chains and h_28..h_59 to the state chain).
@@ -172,7 +155,7 @@ def apply_5_writes
   let l := l.set lane3 ((l[lane3]!).set half3 v3)
   l.set lane4 ((l[lane4]!).set half4 v4)
 
-/-! y0_zeta0 FC (R1 chained-set form).
+/-! y0_zeta0 FC (chained-set form).
 
     Captures the 5 writes as a single chained `apply_5_writes` equation
     on `r.st.val`. Downstream `simp` with aeneas's List.set/getElem!
@@ -298,7 +281,7 @@ private theorem pi_rho_chi_y0_zeta1_spec_fc
         Std.UScalar.bv_xor, Std.UScalar.bv_and, Std.UScalar.bv_not, rot32]
       norm_num)
 
-/-! y1_zeta0 FC (R1 chained-set form): writes lanes 2/8/14/15/21 at halves 1/1/1/0/0;
+/-! y1_zeta0 FC (chained-set form): writes lanes 2/8/14/15/21 at halves 1/1/1/0/0;
     preserves `s.i`. Shift=2: bx_i reads from write_pos[(i-2) mod 5]. -/
 set_option maxHeartbeats 16000000 in
 @[spec]
@@ -483,7 +466,7 @@ private theorem pi_rho_chi_y4_zeta1_spec_fc
         (bx4 ^^^ ((~~~bx0) &&& bx1)) ⌝ ⦄ := by
   prc_y_zeta_no_rc_proof keccak.keccakf1600_round0_pi_rho_chi_y4_zeta1
 
-/-! ## Spec-side `@[spec]` lemmas for `keccak_f.{iota,rho_unrolled,pi_unrolled,chi_unrolled}`
+/-! ## Spec-side `@[spec]` lemmas for `keccak_f.{iota,rho,pi,chi}`
 
 These pure-semantics descriptions let `hax_mvcgen` thread the spec
 computation as a black-box step rather than drilling into each
@@ -937,8 +920,7 @@ theorem lift_theta_applied_bv_24 (s : state.KeccakState) :
 
 /-! ### Set-peeling lemmas for `List` (`getElem!` over `set`)
 
-Replacements for the upstream `List.getElem!_set`/`getElem!_set_ne` that
-were removed in the migration. Derived from `List.getElem?_set`. -/
+List-level `getElem!`-over-`set` lemmas, derived from `List.getElem?_set`. -/
 private theorem list_getElem!_set_ne {α} [Inhabited α] {l : List α} {i j : Nat}
     {a : α} (h : i ≠ j) : (l.set i a)[j]! = l[j]! := by
   simp only [List.getElem!_eq_getElem?_getD, List.getElem?_set, if_neg h]
@@ -951,7 +933,7 @@ private theorem list_getElem!_set_eq {α} [Inhabited α] {l : List α} {i : Nat}
 /-! ## Bridge 1: `prc_lift_spec`
 
 Couples the impl `keccakf1600_round0_pi_rho_chi_{1,2}` chain to the spec
-`iota ∘ chi_unrolled ∘ pi_unrolled ∘ rho_unrolled`. After the recursive
+`iota ∘ chi ∘ pi ∘ rho`. After the recursive
 `hax_mvcgen` produces 50 impl cell equations plus 4 spec substitutions,
 we rewrite the spec side via Bridge 2 to use `prc_spec`, then close the
 25-lane equality via the standard lift cascade (lift_getElem_bv + lift

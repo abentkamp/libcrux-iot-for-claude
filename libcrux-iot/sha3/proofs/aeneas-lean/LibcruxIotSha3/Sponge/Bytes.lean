@@ -327,7 +327,7 @@ theorem state.KeccakState.load_block_spec
       rw [Nat.add_comm, Nat.add_mul_div_left _ _ (by decide : 0 < 5)]
       have : k / 5 / 5 = 0 := Nat.div_eq_of_lt hk_div_5
       omega
-    -- Under the new layout, byte block index = spec index k. The impl's
+    -- The byte block index equals the spec index k. The impl's
     -- loop ranges over j ∈ [0, RATE/8), so we want `k < RATE/8` to mean
     -- the lane was touched. But the impl stored byte block j at impl idx
     -- transpose(j); we read it back at impl idx b = transpose(k). So the

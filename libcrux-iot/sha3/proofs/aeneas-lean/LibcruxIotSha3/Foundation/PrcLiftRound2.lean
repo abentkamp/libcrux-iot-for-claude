@@ -629,7 +629,7 @@ private theorem list_getElem!_set_eq {α} [Inhabited α] {l : List α} {i : Nat}
 /-! ## Main composition: `prc_lift_spec_2`
 
 Couples the round-2 `keccakf1600_round2_pi_rho_chi_{1,2}` chain to the spec
-`iota ∘ chi_unrolled ∘ pi_unrolled ∘ rho_unrolled` applied to the round-1
+`iota ∘ keccak_f.chi ∘ keccak_f.pi ∘ keccak_f.rho` applied to the round-1
 layout state. Output is in round-2 layout (`(impl_perm ∘ impl_perm ∘
 impl_perm, impl_swap_k 3)`). Mirrors `prc_lift_spec_1` but with the round-2
 parameters on both sides. -/

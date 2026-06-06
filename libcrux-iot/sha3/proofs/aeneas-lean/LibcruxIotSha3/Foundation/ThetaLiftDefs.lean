@@ -26,17 +26,17 @@ set_option mvcgen.warning false
 
 attribute [local spec] Aeneas.Std.uncurry
 
-/-! ## Bridge 1: `keccak_f.{theta, rho, pi, chi}` equal their `_unrolled` variants
+/-! ## Bridge 1: characterizing `keccak_f.{theta, rho, pi, chi}`
 
 The hacspec definitions of `theta`/`rho`/`pi`/`chi` call `createi N inst c` —
 which expands to `CoreModels.rust_primitives.slice.array_from_fn N inst.FnMutInst c` —
 with closures whose `call_mut` returns `.ok (call state args, state)` (pure
-closures). The `_unrolled` variants are straight-line do-chains terminating
-in `ok (Std.Array.make N [v₀, …, v_{N-1}])`.
+closures).
 
-We prove the function equality through a generic `@[spec]` lemma
-`createi_pure_spec` characterizing `createi` for pure closures, plus six
-per-closure purity lemmas (one for each of θ's 3, ρ/π/χ's 1 closures). -/
+We characterize each function by a pure `_applied` form through a generic
+`@[spec]` lemma `createi_pure_spec` (handling `createi` for pure closures),
+plus six per-closure purity lemmas (one for each of θ's 3, ρ/π/χ's 1
+closures). -/
 
 /-- Per-element foldlM evaluation for pure closures. The closure state `c`
     is invariant; the result list is `acc ++ l.map f`. -/
@@ -196,7 +196,7 @@ theorem theta_closure_1_call_mut_spec
                       simp_all [Std.UScalar.bv_xor, Std.UScalar.rotate_left]))
 
 /-- `f`-side of theta's third closure (25 final state values).
-    Under the new layout `k = 5*y + x`, so `x = k % 5` and `D[x] = d[k%5]`. -/
+    With the `k = 5*y + x` layout, `x = k % 5` and `D[x] = d[k%5]`. -/
 def theta_closure_2_at
     (sd : Std.Array Std.U64 25#usize × Std.Array Std.U64 5#usize) (k : Nat) :
     Std.U64 :=
@@ -252,8 +252,8 @@ theorem rho_closure_call_mut_spec
                    | (congr 1; rw [hs_eq, hr_eq];
                       simp_all [Std.UScalar.rotate_left]))
 
-/-- `f`-side of `pi`'s closure (lane permutation). Under the new layout
-    `A[x,y]` is at position `5*y + x`, so π's output at `k = 5*y + x`
+/-- `f`-side of `pi`'s closure (lane permutation). With the `5*y + x`
+    layout, `A[x,y]` is at position `5*y + x`, so π's output at `k = 5*y + x`
     reads `state[5*x + (x+3y)%5]`. -/
 def pi_closure_at (state : Std.Array Std.U64 25#usize) (k : Nat) :
     Std.U64 :=
@@ -305,14 +305,12 @@ theorem chi_closure_call_mut_spec
          show ((2#usize : Std.Usize).val) = 2 from rfl,
          show ((5#usize : Std.Usize).val) = 5 from rfl]))
 
-/-! ### Function-equality theorems: `keccak_f.X = keccak_f.X_unrolled`
+/-! ### Function-value theorems: `keccak_f.X = X_applied`
 
-Each non-`_unrolled` hacspec function and its `_unrolled` counterpart are
-shown to produce the same `Result` value by routing both through their
-shared `_applied` form. `keccak_f.X` is proven via `createi_pure_spec` (a
-single `hax_mvcgen` chains through createi → per-closure `[spec]`).
-`keccak_f.X_unrolled` is proven by the existing `*_unrolled_spec` Triples
-in `RoundEquiv.lean` / `PrcLift.lean`.
+Each hacspec function `keccak_f.X` is shown to produce its pure `_applied`
+form. `createi_pure_spec` lets a single `hax_mvcgen` chain through createi →
+per-closure `[spec]`, reaching a 25-cell array equality that the
+`close_array25` macro below collapses.
 
 ### Shared closer for the 25-cell array equality
 
@@ -488,7 +486,7 @@ private theorem rotate_left_u32_spec
 
 /-- `CoreModels.core.num.U64.rotate_left` returns the bit-rotated value. Same
     shape as `rotate_left_u32_spec`; used on the spec side of
-    `theta_lift_spec` for the 5 ρ-style rotations in `theta_unrolled`. -/
+    `theta_lift_spec` for the 5 ρ-style rotations in `keccak_f.theta`. -/
 @[spec]
 private theorem rotate_left_u64_spec
     (x : Std.U64) (n : Std.U32) {Q}
@@ -775,11 +773,11 @@ theorem theta_comp_spec_local (s : state.KeccakState) :
 /-! ## θ-applied lifted state (spec-coupling side)
 
 After impl θ, the impl's `r.st` is *unchanged* — the actual XOR-into-`st`
-is deferred to π·ρ·χ. But the spec's `theta_unrolled` *does* apply the
+is deferred to π·ρ·χ. But the spec's `keccak_f.theta` *does* apply the
 d-values to the state in one go. To bridge this asymmetry we define
 `lift_theta_applied r_impl`, the lifted 25-lane state that the spec
 would produce given the impl's post-θ d-cells. The spec-coupling
-theorem then proves `theta_unrolled (lift s) = ok (lift_theta_applied r_impl)`.
+theorem then proves `keccak_f.theta (lift s) = ok (lift_theta_applied r_impl)`.
 -/
 
 /-- Helper for `lift_theta_applied`: lift a single lane given the four
@@ -789,7 +787,7 @@ theorem then proves `theta_unrolled (lift s) = ok (lift_theta_applied r_impl)`.
 private abbrev lta (st_z0 st_z1 d_z0 d_z1 : Std.U32) : Std.U64 :=
   ⟨lift_lane_bv ((st_z0 ^^^ d_z0).bv) ((st_z1 ^^^ d_z1).bv)⟩
 
-/-- The 25-lane `u64` state that the spec's `theta_unrolled` produces
+/-- The 25-lane `u64` state that the spec's `keccak_f.theta` produces
     given the impl's post-θ scratch cells. Each spec lane `i = 5*y + x` is
     `lift_lane_bv (s.st[transpose_perm i].z0 ⊕ s.d[i%5].z0)
                   (s.st[transpose_perm i].z1 ⊕ s.d[i%5].z1)`,
@@ -799,7 +797,7 @@ private abbrev lta (st_z0 st_z1 d_z0 d_z1 : Std.U32) : Std.U64 :=
     Written as a literal 25-element list (rather than `List.ofFn`) so
     that `unfold lift_theta_applied` exposes a concrete cons list — this
     aligns the RHS structurally with the LHS literal list produced by
-    `hax_mvcgen` on `theta_unrolled` and lets a 25-way `congr` peel the
+    `hax_mvcgen` on `keccak_f.theta` and lets a 25-way `congr` peel the
     lanes pointwise. -/
 def lift_theta_applied (s : state.KeccakState) : Std.Array Std.U64 25#usize :=
   let d := s.d; let st := s.st
@@ -875,7 +873,7 @@ This generalization specialises to the existing `lift_theta_applied` at
 
   For example, at the post-round-1-theta state with permutation
   `impl_perm` and swap `impl_swap_k 1`:
-  `theta_unrolled (lift_perm s impl_perm (impl_swap_k 1))
+  `keccak_f.theta (lift_perm s impl_perm (impl_swap_k 1))
    = .ok (lift_theta_applied_perm r_impl impl_perm (impl_swap_k 1))`. -/
 def lift_theta_applied_perm
     (s : state.KeccakState) (p : Fin 25 → Fin 25) (sw : Fin 25 → Bool) :
@@ -1051,7 +1049,7 @@ theorem lift_getElem_bv_24 (s : state.KeccakState) :
 
 /-! ## Spec-coupling theorem
 
-After running the impl θ on `s`, the spec's `theta_unrolled (lift s)`
+After running the impl θ on `s`, the spec's `keccak_f.theta (lift s)`
 produces exactly `lift_theta_applied r_impl`. The chain of equalities:
 
   spec lane i  = (lift s)[i] ⊕ spec_d[i/5]

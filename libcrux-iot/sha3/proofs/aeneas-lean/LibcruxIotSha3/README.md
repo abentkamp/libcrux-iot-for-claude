@@ -112,15 +112,15 @@ Three named pieces (one file each at the top of the proof tree):
   Rust extraction equals the pure-Lean bit spec under
   `KState.fromAeneas`.
 
-- **`AlgebraicEquiv.lean`** (`bit_keccak_spec` lifted ≡ unrolled version
-  of spec). Proves the pure-Lean bit spec, lifted to `u64`, equals the
-  unrolled version of the spec.
+- **`AlgebraicEquiv.lean`** (`bit_keccak_spec` lifted ≡ spec). Proves the
+  pure-Lean bit spec, lifted to `u64`, equals the hacspec 24-round
+  application of the round body (θ; ρ; π; χ; ι).
 
 - **`Composition/`**:
-  - **`ViaBit.lean`** — composes the two equivalences above to
-    show that the impl is equivalent to the unrolled version of the spec.
-  - **`HacspecBridge.lean`** — couples the `_unrolled` spec functions
-    to the non-`_unrolled` spec functions to yield `keccakf1600_equiv_hacspec`
+  - **`ViaBit.lean`** — composes the two equivalences above to show that
+    the impl, lifted to `u64`, equals the 24-round spec chain.
+  - **`HacspecBridge.lean`** — bridges the 24-round spec chain to the
+    hacspec `keccak_f.keccak_f` loop to yield `keccakf1600_equiv_hacspec`
     as stated above.
 
 ### Sponge construction proof

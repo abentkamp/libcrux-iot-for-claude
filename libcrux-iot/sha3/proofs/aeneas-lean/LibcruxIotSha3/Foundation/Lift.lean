@@ -202,7 +202,7 @@ These four lemmas appear textually-identical across all three
 just references the shared copy. -/
 
 /-- `lift_perm` lane indexing: read the k-th lane of a permuted state.
-    Note: under the new layout, the permutation `p` is composed with
+    Note: the permutation `p` is composed with
     `transpose_perm`. -/
 theorem lift_perm_getElem (s : libcrux_iot_sha3.state.KeccakState)
     (p : Fin 25 → Fin 25) (sw : Fin 25 → Bool) (k : Fin 25) :

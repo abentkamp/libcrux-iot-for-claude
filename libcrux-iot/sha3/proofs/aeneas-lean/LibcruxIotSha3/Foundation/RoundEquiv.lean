@@ -1,7 +1,7 @@
 /-
   Per-round functional equivalence (impl-side `keccakf1600_round{N}_*`
-  composed against the spec-side `theta_unrolled ∘ rho_unrolled ∘
-  pi_unrolled ∘ chi_unrolled ∘ iota`).
+  composed against the spec-side `keccak_f.theta ∘ keccak_f.rho ∘
+  keccak_f.pi ∘ keccak_f.chi ∘ iota`).
 
   This file composes `theta_lift_spec` and `prc_lift_spec` (round 0)
   into a single Triple establishing the full per-round equivalence.
@@ -93,7 +93,7 @@ theorem keccakf1600_round0_pi_rho_chi_chain_spec
 
 /-- Spec-chain claim for round 0 (opaque to `mvcgen`). Wrapping the
     spec do-block in this `def` prevents `mvcgen` from trying to
-    advance `wp⟦theta_unrolled (lift s)⟧` in the post during impl
+    advance `wp⟦keccak_f.theta (lift s)⟧` in the post during impl
     advancement. -/
 @[irreducible]
 def round0_post (s : state.KeccakState) (r_impl : state.KeccakState) : Prop :=
