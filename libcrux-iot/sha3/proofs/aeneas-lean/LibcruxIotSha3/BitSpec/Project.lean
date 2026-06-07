@@ -1,6 +1,6 @@
 /-
   Projection simp-lemma bridge between `Lane.fromAeneas l .zζ` and
-  `l.val[ζ]!.bv` for `ζ ∈ {0, 1}`. After applying these as `simp`, the
+  `l[ζ].bv` for `ζ ∈ {0, 1}`. After applying these as `simp`, the
   per-lane equalities reduce to pure `BitVec 32` equations closable by
   `bv_decide`.
 -/
@@ -22,13 +22,13 @@ private theorem Lane2U32.shape (l : lane.Lane2U32) :
 
 @[simp]
 theorem Lane.fromAeneas_z0 (l : lane.Lane2U32) :
-    (Lane.fromAeneas l).z0 = l.val[0]!.bv := by
+    (Lane.fromAeneas l).z0 = l[0].bv := by
   obtain ⟨a, b, hl⟩ := Lane2U32.shape l
   simp [Lane.fromAeneas, hl]
 
 @[simp]
 theorem Lane.fromAeneas_z1 (l : lane.Lane2U32) :
-    (Lane.fromAeneas l).z1 = l.val[1]!.bv := by
+    (Lane.fromAeneas l).z1 = l[1].bv := by
   obtain ⟨a, b, hl⟩ := Lane2U32.shape l
   simp [Lane.fromAeneas, hl]
 
