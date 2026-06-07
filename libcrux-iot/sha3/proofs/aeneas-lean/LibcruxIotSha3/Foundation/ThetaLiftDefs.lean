@@ -509,9 +509,15 @@ local macro "theta_sub_preserves_st_i_proof" subfun:ident : tactic =>
 
 /-- Tactic for the strengthened `theta_c_xX_zZ` specs: after `hax_mvcgen`
     handles the do-block, the remaining VC says the freshly-written
-    `c[X][Z]` value equals the chained XOR of five `s.st` reads. The
-    XOR equality is per `UScalar.eq_equiv_bv_eq` + the BitVec halves
-    of `h✝` already accumulated by `mvcgen`. Shared across rounds 0-3. -/
+    `c[X][Z]` value equals the chained XOR of five `s.st` reads.
+
+    Our spec posts use `.val[i]` (bound `getElem`) form; mvcgen's emitted
+    hypotheses use `.val[i]!` (panicking) form after `simp` normalization
+    via `Slice.Inhabited_getElem_eq_getElem!` etc. `congr 2` leaves two
+    goals per conjunct: a U32 chi-equality and a Lane2U32 bridge
+    `(↑s.c)[k]! = (↑s.c)[k]` (the outer `set`'s array argument). The
+    second is closed by `getElem!_pos` after discharging the bound.
+    Shared across rounds 0-3. -/
 macro "theta_c_proof" subfun:ident : tactic =>
   `(tactic|
     (unfold $subfun
@@ -522,9 +528,10 @@ macro "theta_c_proof" subfun:ident : tactic =>
           refine ⟨?_, ?_, ?_, ?_⟩
           all_goals first | assumption | (
             apply Eq.trans ‹_›
-            congr 2
-            apply Std.U32.bv_eq_imp_eq
-            simp_all [Std.UScalar.bv_xor]))))
+            congr 2 <;> first
+              | (apply Std.U32.bv_eq_imp_eq
+                 simp_all [Std.UScalar.bv_xor])
+              | (rw [getElem!_pos] <;> simp)))))
 
 /-! Theta_c sub-function specs. Each ends in `set_lane_value` (only
     touches `c`), so the registered `set_lane_value_preserves_st_i`
@@ -534,10 +541,10 @@ macro "theta_c_proof" subfun:ident : tactic =>
 private theorem theta_c_x0_z0_spec (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round0_theta_c_x0_z0 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 0#usize ((s.c.val[0]!).set 0#usize
-          (s.st.val[0]!.val[0]! ^^^ s.st.val[1]!.val[0]! ^^^
-           s.st.val[2]!.val[0]! ^^^ s.st.val[3]!.val[0]! ^^^
-           s.st.val[4]!.val[0]!)) ⌝ ⦄ := by
+        r.c = s.c.set 0#usize ((s.c.val[0]).set 0#usize
+          (s.st.val[0].val[0] ^^^ s.st.val[1].val[0] ^^^
+           s.st.val[2].val[0] ^^^ s.st.val[3].val[0] ^^^
+           s.st.val[4].val[0])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round0_theta_c_x0_z0
 
 @[spec]
