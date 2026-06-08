@@ -47,100 +47,100 @@ literal XOR chain matches structurally. -/
 private theorem theta_c_x0_z0_spec_1 (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round1_theta_c_x0_z0 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 0#usize ((s.c.val[0]!).set 0#usize
-          (s.st.val[0]!.val[0]! ^^^ s.st.val[1]!.val[0]! ^^^
-           s.st.val[2]!.val[1]! ^^^ s.st.val[3]!.val[1]! ^^^
-           s.st.val[4]!.val[0]!)) ⌝ ⦄ := by
+        r.c = s.c.set 0#usize ((s.c.val[0]).set 0#usize
+          (s.st.val[0].val[0] ^^^ s.st.val[1].val[0] ^^^
+           s.st.val[2].val[1] ^^^ s.st.val[3].val[1] ^^^
+           s.st.val[4].val[0])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round1_theta_c_x0_z0
 
 @[spec]
 private theorem theta_c_x0_z1_spec_1 (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round1_theta_c_x0_z1 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 0#usize ((s.c.val[0]!).set 1#usize
-          (s.st.val[0]!.val[1]! ^^^ s.st.val[1]!.val[1]! ^^^
-           s.st.val[2]!.val[0]! ^^^ s.st.val[3]!.val[0]! ^^^
-           s.st.val[4]!.val[1]!)) ⌝ ⦄ := by
+        r.c = s.c.set 0#usize ((s.c.val[0]).set 1#usize
+          (s.st.val[0].val[1] ^^^ s.st.val[1].val[1] ^^^
+           s.st.val[2].val[0] ^^^ s.st.val[3].val[0] ^^^
+           s.st.val[4].val[1])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round1_theta_c_x0_z1
 
 @[spec]
 private theorem theta_c_x1_z0_spec_1 (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round1_theta_c_x1_z0 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 1#usize ((s.c.val[1]!).set 0#usize
-          (s.st.val[5]!.val[1]! ^^^ s.st.val[6]!.val[0]! ^^^
-           s.st.val[7]!.val[0]! ^^^ s.st.val[8]!.val[1]! ^^^
-           s.st.val[9]!.val[0]!)) ⌝ ⦄ := by
+        r.c = s.c.set 1#usize ((s.c.val[1]).set 0#usize
+          (s.st.val[5].val[1] ^^^ s.st.val[6].val[0] ^^^
+           s.st.val[7].val[0] ^^^ s.st.val[8].val[1] ^^^
+           s.st.val[9].val[0])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round1_theta_c_x1_z0
 
 @[spec]
 private theorem theta_c_x1_z1_spec_1 (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round1_theta_c_x1_z1 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 1#usize ((s.c.val[1]!).set 1#usize
-          (s.st.val[5]!.val[0]! ^^^ s.st.val[6]!.val[1]! ^^^
-           s.st.val[7]!.val[1]! ^^^ s.st.val[8]!.val[0]! ^^^
-           s.st.val[9]!.val[1]!)) ⌝ ⦄ := by
+        r.c = s.c.set 1#usize ((s.c.val[1]).set 1#usize
+          (s.st.val[5].val[0] ^^^ s.st.val[6].val[1] ^^^
+           s.st.val[7].val[1] ^^^ s.st.val[8].val[0] ^^^
+           s.st.val[9].val[1])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round1_theta_c_x1_z1
 
 @[spec]
 private theorem theta_c_x2_z0_spec_1 (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round1_theta_c_x2_z0 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 2#usize ((s.c.val[2]!).set 0#usize
-          (s.st.val[10]!.val[0]! ^^^ s.st.val[11]!.val[0]! ^^^
-           s.st.val[12]!.val[1]! ^^^ s.st.val[13]!.val[1]! ^^^
-           s.st.val[14]!.val[1]!)) ⌝ ⦄ := by
+        r.c = s.c.set 2#usize ((s.c.val[2]).set 0#usize
+          (s.st.val[10].val[0] ^^^ s.st.val[11].val[0] ^^^
+           s.st.val[12].val[1] ^^^ s.st.val[13].val[1] ^^^
+           s.st.val[14].val[1])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round1_theta_c_x2_z0
 
 @[spec]
 private theorem theta_c_x2_z1_spec_1 (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round1_theta_c_x2_z1 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 2#usize ((s.c.val[2]!).set 1#usize
-          (s.st.val[10]!.val[1]! ^^^ s.st.val[11]!.val[1]! ^^^
-           s.st.val[12]!.val[0]! ^^^ s.st.val[13]!.val[0]! ^^^
-           s.st.val[14]!.val[0]!)) ⌝ ⦄ := by
+        r.c = s.c.set 2#usize ((s.c.val[2]).set 1#usize
+          (s.st.val[10].val[1] ^^^ s.st.val[11].val[1] ^^^
+           s.st.val[12].val[0] ^^^ s.st.val[13].val[0] ^^^
+           s.st.val[14].val[0])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round1_theta_c_x2_z1
 
 @[spec]
 private theorem theta_c_x3_z0_spec_1 (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round1_theta_c_x3_z0 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 3#usize ((s.c.val[3]!).set 0#usize
-          (s.st.val[15]!.val[0]! ^^^ s.st.val[16]!.val[1]! ^^^
-           s.st.val[17]!.val[1]! ^^^ s.st.val[18]!.val[1]! ^^^
-           s.st.val[19]!.val[0]!)) ⌝ ⦄ := by
+        r.c = s.c.set 3#usize ((s.c.val[3]).set 0#usize
+          (s.st.val[15].val[0] ^^^ s.st.val[16].val[1] ^^^
+           s.st.val[17].val[1] ^^^ s.st.val[18].val[1] ^^^
+           s.st.val[19].val[0])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round1_theta_c_x3_z0
 
 @[spec]
 private theorem theta_c_x3_z1_spec_1 (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round1_theta_c_x3_z1 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 3#usize ((s.c.val[3]!).set 1#usize
-          (s.st.val[15]!.val[1]! ^^^ s.st.val[16]!.val[0]! ^^^
-           s.st.val[17]!.val[0]! ^^^ s.st.val[18]!.val[0]! ^^^
-           s.st.val[19]!.val[1]!)) ⌝ ⦄ := by
+        r.c = s.c.set 3#usize ((s.c.val[3]).set 1#usize
+          (s.st.val[15].val[1] ^^^ s.st.val[16].val[0] ^^^
+           s.st.val[17].val[0] ^^^ s.st.val[18].val[0] ^^^
+           s.st.val[19].val[1])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round1_theta_c_x3_z1
 
 @[spec]
 private theorem theta_c_x4_z0_spec_1 (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round1_theta_c_x4_z0 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 4#usize ((s.c.val[4]!).set 0#usize
-          (s.st.val[20]!.val[1]! ^^^ s.st.val[21]!.val[0]! ^^^
-           s.st.val[22]!.val[1]! ^^^ s.st.val[23]!.val[0]! ^^^
-           s.st.val[24]!.val[0]!)) ⌝ ⦄ := by
+        r.c = s.c.set 4#usize ((s.c.val[4]).set 0#usize
+          (s.st.val[20].val[1] ^^^ s.st.val[21].val[0] ^^^
+           s.st.val[22].val[1] ^^^ s.st.val[23].val[0] ^^^
+           s.st.val[24].val[0])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round1_theta_c_x4_z0
 
 @[spec]
 private theorem theta_c_x4_z1_spec_1 (s : state.KeccakState) :
     ⦃ ⌜ True ⌝ ⦄ keccak.keccakf1600_round1_theta_c_x4_z1 s
     ⦃ ⇓ r => ⌜ r.st = s.st ∧ r.i = s.i ∧ r.d = s.d ∧
-        r.c = s.c.set 4#usize ((s.c.val[4]!).set 1#usize
-          (s.st.val[20]!.val[0]! ^^^ s.st.val[21]!.val[1]! ^^^
-           s.st.val[22]!.val[0]! ^^^ s.st.val[23]!.val[1]! ^^^
-           s.st.val[24]!.val[1]!)) ⌝ ⦄ := by
+        r.c = s.c.set 4#usize ((s.c.val[4]).set 1#usize
+          (s.st.val[20].val[0] ^^^ s.st.val[21].val[1] ^^^
+           s.st.val[22].val[0] ^^^ s.st.val[23].val[1] ^^^
+           s.st.val[24].val[1])) ⌝ ⦄ := by
   theta_c_proof keccak.keccakf1600_round1_theta_c_x4_z1
 
 /-! Round-1 `theta_d` overwrites `s.d` from the existing `s.c` cells.
