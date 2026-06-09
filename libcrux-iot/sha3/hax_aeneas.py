@@ -22,7 +22,8 @@ check_version(["cargo", "hax", "--version"], "hax", HAX_VERSION)
 check_version(["aeneas", "-version"], "aeneas", AENEAS_VERSION)
 
 result = subprocess.run(
-    ["cargo", "hax", "into", "aeneas-lean", '--aeneas-args="-core-models-lib"'],
+    ["cargo", "hax", "into", "aeneas-lean",
+     '--aeneas-args="-core-models-lib -all-computable"'],
     env={**os.environ, "RUSTFLAGS": "--cfg hax_backend_lean"},
 )
 

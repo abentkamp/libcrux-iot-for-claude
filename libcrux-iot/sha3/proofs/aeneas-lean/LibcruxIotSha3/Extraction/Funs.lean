@@ -16,9 +16,6 @@ set_option maxHeartbeats 1000000
 /- You can set the `maxRecDepth` value with the `-max-recdepth` CLI option -/
 set_option maxRecDepth 2048
 
-/- You can remove the following line by using the CLI option `-all-computable`: -/
--- noncomputable section  -- removed to allow executing the generated code (see LibcruxIotSha3/Tests/Eval.lean)
-
 namespace libcrux_iot_sha3
 
 /-- [libcrux_iot_sha3::impl_digest_trait::SHA3_224_LEN]

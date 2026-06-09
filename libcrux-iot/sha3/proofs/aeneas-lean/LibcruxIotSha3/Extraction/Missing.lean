@@ -4,8 +4,6 @@ import HacspecSha3
 
 open Aeneas Aeneas.Std Result
 
--- noncomputable section  -- removed to allow executing the generated code (see LibcruxIotSha3/Tests/Eval.lean)
-
 namespace CoreModels.core
 
 /-! Helpers used by the `-core-models-lib` extraction of `libcrux-iot-sha3`
@@ -74,5 +72,3 @@ def U64.Insts.Libcrux_secretsIntCastOps.as_u32 (x : U64) : Result U32 :=
   ok (UScalar.cast .U32 x)
 
 end libcrux_secrets
-
--- end  -- (was closing the removed `noncomputable section`)
