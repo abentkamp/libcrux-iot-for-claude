@@ -79,37 +79,57 @@ These compose the per-layer butterfly drivers
 
 ## Proof architecture
 
-`hacspec_ml_dsa.*` is the `specs/ml-dsa` Rust spec crate machine-extracted to
-aeneas-lean (the same pipeline as the impl), wired in as the `HacspecMlDsa` Lake
-dependency. The bridge ([`Spec/HacspecBridge.lean`](Spec/HacspecBridge.lean))
-re-encodes between the impl's SIMD lanes and the spec's `[i32; 256]`, proves the
-extracted `mod_q` total and residue-preserving (`mod_q_eq`), and matches each
-extracted op to the impl; the `ZETAS`-table match (`zetas_bridge`) is a kernel
-`decide` in `Z_q` over the full 256-entry table. Internally the equivalence
-factors through a clean-`Z_q` Lean restatement
-([`Spec/Pure.lean`](Spec/Pure.lean), proven equal to the extracted spec) — a
-proof convenience that keeps the algebra in `ZMod q`, not a separately trusted
-artifact.
+The proof is built around a **Lean reference spec** that sits between the two
+machine-extracted Rust artifacts. We write the spec once in Lean, prove it
+equivalent to the Rust implementation *and* to the Rust spec, then compose the
+two equivalences to obtain the top-level theorems.
 
-The impl works over `Coefficients`-backed `i32` lanes in the (signed,
-non-canonical) **Montgomery** domain, packed as 32 SIMD units of 8 lanes. The
-proofs reduce these lane-wise to a clean `Array (ZMod q)` of 256 coefficients —
-the working representation in which the algebra is done (the spec's own
-`[i32; 256]` is its canonical-residue image). The lift family in
-[`Spec/Lift.lean`](Spec/Lift.lean):
+```
+   Rust impl  ──(impl FCs)──▶  Lean spec  ◀──(spec bridges)──  Rust spec
+ (extracted Funs)            (Spec/Pure.lean)            (extracted hacspec_ml_dsa)
+        └──────────────────── composed ─────────────────────▶ *_hacspec_fc
+```
 
-- `liftZ x = (x : Z_q) · R⁻¹` (strips one Montgomery factor); `liftZ_std x = (x : Z_q)`.
-- `lift_units` / `lift_poly` flatten 32×8 lanes into a 256-element `Z_q` poly,
-  mont-stripped lane-wise (`lift_poly re = lift_units re.simd_units`, by `rfl`).
-- Seam lemmas: `liftZ_add`/`liftZ_sub` (additivity), `liftZ_of_mont`
-  (a Montgomery product lifts to a clean product — the `R⁻¹²` reconciliation
-  used by `ntt_multiply_montgomery_fc`).
+**1. The Lean reference spec.** [`Spec/Pure.lean`](Spec/Pure.lean) is a small,
+self-contained reference written directly in `ZMod q`: `ntt`, `intt`,
+`poly_pointwise_mul`, `poly_add` / `poly_sub`, `infinity_norm_exceeds`, etc. The
+rounding operations are in [`Spec/Rounding.lean`](Spec/Rounding.lean) and the
+shared constants in [`Spec/Parameters.lean`](Spec/Parameters.lean) /
+[`Spec/Montgomery.lean`](Spec/Montgomery.lean). Working in `ZMod q` keeps the
+algebra clean and makes both equivalences below tractable.
 
-The poly-layer proofs are either one-step corollaries of the NTT masters
-(`ntt`, `invert_ntt_montgomery`) or 32-unit loop compositions of the per-unit
-specs (`add`, `subtract`, `ntt_multiply_montgomery`, `reduce`, `zero`,
-`to_i32_array`, `from_i32_array`, `infinity_norm_exceeds`), driven by the loop
-combinators in [`Util/`](Util/).
+**2. Lean spec ↔ Rust impl.** Each impl FC theorem proves that an extracted
+implementation function, lifted to `ZMod q`, computes the corresponding
+`Spec.Pure.*` function — e.g. [`Polynomial/Ntt.lean`](Polynomial/Ntt.lean)'s
+`ntt_fc` establishes `lift_poly r = Pure.ntt (lift_poly re)`. These are built
+bottom-up from the per-SIMD-unit specs, butterfly drivers and NTT masters in
+[`Vector/Portable/`](Vector/Portable/) and the loop combinators in
+[`Util/`](Util/). The representation gap — the impl stores 32×8 signed,
+Montgomery-domain `i32` lanes, the spec a flat 256-element `ZMod q` array — is
+handled by the `lift` family in [`Spec/Lift.lean`](Spec/Lift.lean) (`liftZ`
+strips one Montgomery factor; `lift_poly` / `lift_poly_res` flatten the lanes).
+
+**3. Lean spec ↔ Rust spec.** The Rust spec is `hacspec_ml_dsa.*` — the
+`specs/ml-dsa` crate machine-extracted to Lean by the same `cargo hax` pipeline
+as the impl and wired in as the `HacspecMlDsa` Lake dependency. The *bridge*
+lemmas prove each `Spec.Pure.*` function equals its extracted `hacspec_ml_dsa.*`
+counterpart under the residue map: see
+[`Spec/HacspecBridge.lean`](Spec/HacspecBridge.lean) (`mod_q_eq`,
+`createi_pure_eq`, `poly_add_bridge` / `poly_sub_bridge` /
+`poly_pointwise_mul_bridge`),
+[`Polynomial/HacspecNtt.lean`](Polynomial/HacspecNtt.lean) (`ntt_bridge`,
+`intt_bridge`, and the `zetas_bridge` table check), and
+[`Polynomial/HacspecNorm.lean`](Polynomial/HacspecNorm.lean)
+(`coeff_norm_bridge`, `poly_infinity_norm_bridge`).
+
+**4. Composition.** The top-level `*_hacspec_fc` theorems
+([`Polynomial/HacspecNtt.lean`](Polynomial/HacspecNtt.lean),
+[`Polynomial/HacspecFC.lean`](Polynomial/HacspecFC.lean),
+[`Polynomial/HacspecNorm.lean`](Polynomial/HacspecNorm.lean)) chain the two
+halves: the impl FC gives impl ↔ Lean spec and the bridge gives Lean spec ↔ Rust
+spec, so the implementation is shown to match the extracted Rust spec directly.
+The Lean spec is thus only a proof convenience — it is *proven equal* to the
+trusted extracted spec, not an independently trusted artifact.
 
 ## Reproduction
 
