@@ -17,5 +17,5 @@ rev = "ffdf432705d409b62ec025d253a340234b59766f"
 # as above, so the dependency graphs unify.
 [[require]]
 name = "HacspecMlDsa"
-git = { url = "https://github.com/cryspen/libcrux", subDir = "specs/ml-dsa/proofs/aeneas-lean" }
+git = { url = "https://github.com/celabshq/libcrux", subDir = "specs/ml-dsa/proofs/aeneas-lean" }
 rev = "e17b91789337650666e3dea86a1e42abb32919a4"
