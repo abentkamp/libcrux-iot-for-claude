@@ -148,6 +148,12 @@ theorem zero_fc :
   unfold liftZ
   simp
 
+/--
+info: 'libcrux_iot_ml_dsa.Polynomial.Convert.zero_fc' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms zero_fc
+
 /-! ## `from_i32_array` — `PolynomialRingElement.from_i32_array` at `portable_ops_inst`.
 
 A `Range`-iterator loop `0..32`; the accumulator is the whole `result : PRE`. Each
@@ -479,6 +485,12 @@ theorem from_i32_array_fc
   rw [h]
   -- `8 * (k/8) + k%8 = k`.
   rw [show 8 * (k / 8) + k % 8 = k from by omega]
+
+/--
+info: 'libcrux_iot_ml_dsa.Polynomial.Convert.from_i32_array_fc' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms from_i32_array_fc
 
 /-- **`lift_poly`-form corollary of `from_i32_array_fc`.** The lifted ring element
     is the clean spec built from the (mont-stripped) input lanes. -/
@@ -871,5 +883,11 @@ theorem to_i32_array_fc (self : PRE) :
     rw [List.drop_zero]; rfl
   · rfl
   · intro j hj; exact absurd hj (Nat.not_lt_zero j)
+
+/--
+info: 'libcrux_iot_ml_dsa.Polynomial.Convert.to_i32_array_fc' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms to_i32_array_fc
 
 end libcrux_iot_ml_dsa.Polynomial.Convert

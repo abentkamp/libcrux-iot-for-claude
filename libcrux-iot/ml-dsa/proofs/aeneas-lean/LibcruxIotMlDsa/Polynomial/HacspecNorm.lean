@@ -645,4 +645,12 @@ theorem infinity_norm_exceeds_hacspec_fc
       hcentered (i / 8) (by omega) (i % 8) (Nat.mod_lt i (by decide))
     rw [coeff_norm_eq_abs_of_centered _ hcen] at hb; exact hb
 
+/--
+info: 'libcrux_iot_ml_dsa.Polynomial.HacspecNorm.infinity_norm_exceeds_hacspec_fc' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs in
+#print axioms infinity_norm_exceeds_hacspec_fc
+
 end libcrux_iot_ml_dsa.Polynomial.HacspecNorm

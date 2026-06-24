@@ -764,4 +764,10 @@ theorem reduce_fc
       show (out.val[u]!).values.val[j]!.val.natAbs ≤ _
       exact h_bd u hu j hj
 
+/--
+info: 'libcrux_iot_ml_dsa.Polynomial.NttArith.reduce_fc' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms reduce_fc
+
 end libcrux_iot_ml_dsa.Polynomial.NttArith

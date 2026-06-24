@@ -65,6 +65,12 @@ theorem poly_add_hacspec_fc
   apply triple_of_ok hr_eq
   exact HacspecBridge.poly_add_hacspec_eq self rhs r hr_lift
 
+/--
+info: 'libcrux_iot_ml_dsa.Polynomial.HacspecFC.poly_add_hacspec_fc' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms poly_add_hacspec_fc
+
 /-- **`PolynomialRingElement.subtract` ↔ extracted `hacspec_ml_dsa.polynomial.poly_sub`.** -/
 @[spec]
 theorem poly_sub_hacspec_fc
@@ -81,6 +87,12 @@ theorem poly_sub_hacspec_fc
   apply triple_of_ok hr_eq
   exact HacspecBridge.poly_sub_hacspec_eq self rhs r hr_lift
 
+/--
+info: 'libcrux_iot_ml_dsa.Polynomial.HacspecFC.poly_sub_hacspec_fc' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms poly_sub_hacspec_fc
+
 /-- **`ntt.ntt_multiply_montgomery` ↔ extracted `hacspec_ml_dsa.polynomial.poly_pointwise_mul`.** -/
 @[spec]
 theorem poly_pointwise_mul_hacspec_fc
@@ -95,5 +107,13 @@ theorem poly_pointwise_mul_hacspec_fc
     triple_exists_ok (Polynomial.NttArith.ntt_multiply_montgomery_fc lhs rhs hpre)
   apply triple_of_ok hr_eq
   exact HacspecBridge.poly_pointwise_mul_hacspec_eq lhs rhs r hr_lift
+
+/--
+info: 'libcrux_iot_ml_dsa.Polynomial.HacspecFC.poly_pointwise_mul_hacspec_fc' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs in
+#print axioms poly_pointwise_mul_hacspec_fc
 
 end libcrux_iot_ml_dsa.Polynomial.HacspecFC

@@ -1135,6 +1135,12 @@ theorem ntt_hacspec_fc
   apply triple_of_ok hr_eq
   exact ntt_hacspec_eq re r hr_lift
 
+/--
+info: 'libcrux_iot_ml_dsa.Polynomial.HacspecNtt.ntt_hacspec_fc' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms ntt_hacspec_fc
+
 set_option maxHeartbeats 1000000 in
 /-- **`ntt.invert_ntt_montgomery` ↔ extracted `hacspec_ml_dsa.ntt.intt`** (`@[spec]`
     Triple, `·R`-reconciled). Composes `invert_ntt_montgomery_fc` with `intt_hacspec_eq`. -/
@@ -1154,5 +1160,11 @@ theorem intt_hacspec_fc
     triple_exists_ok (libcrux_iot_ml_dsa.Polynomial.Ntt.invert_ntt_montgomery_fc re B hB hin)
   apply triple_of_ok hr_eq
   exact intt_hacspec_eq re r hr_lift
+
+/--
+info: 'libcrux_iot_ml_dsa.Polynomial.HacspecNtt.intt_hacspec_fc' depends on axioms: [propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs in
+#print axioms intt_hacspec_fc
 
 end libcrux_iot_ml_dsa.Polynomial.HacspecNtt
